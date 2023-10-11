@@ -192,7 +192,7 @@ for (i in seq(1, 100)) {
     
     
   }
-  
+    #the last item in the list is (supposed to) always be the next button 
     intermediate_url_xpath_node <- page |> html_nodes(xpath = '//*[@id="main"]/div/div[1]/div[2]/a') |> html_text() 
     url_xpath <- paste0('//*[@id="main"]/div/div[1]/div[2]/a', '[', as.character(length(intermediate_url_xpath_node)), ']')
     
