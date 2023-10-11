@@ -118,7 +118,7 @@ movies <- tibble(
 base_url <- 'https://www.imdb.com/search/title/?title_type=feature&num_votes=10000,&sort=user_rating,desc&ref_=adv_prv'
 urls <- list()
 
-for (i in seq(6000, 7000, 50)) {
+for (i in seq(6000, 6100, 50)) {
   url <- paste0('https://www.imdb.com/search/title/?title_type=feature&num_votes=10000,&sort=user_rating,desc&start=', i, '&ref_=adv_nxt')
   urls <- append(urls,url)
 }
@@ -130,7 +130,7 @@ for (url in urls) {
   response <- httr::GET(url)
   
   # Extract movie information
-  page <- read_html(content(response, "text"))
+  page <- read_html(response, "text")#read_html(content(response, "text"))#read_html(content(response, "text"))
 
 
 for(movie_index in 1:50){
@@ -185,9 +185,9 @@ for(movie_index in 1:50){
   item_3 <- page |>html_nodes(xpath = item_3_xpath) |> html_text()
   #TODO FUNcutionalprogramming
   is_run_time_vector <- c(
-    grepl(item_1,pattern = " min", certificate),
-    grepl(item_2,pattern = " min", certificate),
-    grepl(item_3,pattern = " min", certificate))
+    grepl(item_1,pattern = " min"),
+    grepl(item_2,pattern = " min"),
+    grepl(item_3,pattern = " min"))
   
   #classification
   if(is_run_time_vector[1]){
