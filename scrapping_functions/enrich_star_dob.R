@@ -1,7 +1,9 @@
 find_dob <- function(star_with_underscore){
-  dob_data <- sapply(star_with_underscore, find_single_dob)
-  # Combine the results into a single tibble
-  dob_df <- bind_rows(dob_data)
+  dob_tibble <- tibble(star_with_underscore = character(), dob = character())
+  for(i in seq_along(star_with_underscore)){
+    dob_data <- find_single_dob(star_with_underscore)
+    dob_tibble <- rbind(dob_tibble,dob_data)
+  }
   return(dob_df)
 }
 
@@ -25,4 +27,7 @@ find_single_dob <- function(star) {
     tibble(title = star_with_underscore, dob = NA)
   })
 }
+
+
+## Does number of directors influence movie success? gross, rating,etc...
 
