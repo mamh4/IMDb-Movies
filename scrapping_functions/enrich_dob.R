@@ -14,7 +14,7 @@ find_single_dob <- function(star) {
   tryCatch({
     webpage <- read_html(url)
     dob <- webpage %>%
-      html_node(".infobox.biography.vcard .bday") %>%
+      html_node("span.bday") %>%
       html_text()
     
     cat("Date of Birth for ", star_with_underscore, ": ", dob, "\n")
@@ -27,7 +27,3 @@ find_single_dob <- function(star) {
     tibble(title = star_with_underscore, dob = NA)
   })
 }
-
-
-## Does number of directors influence movie success? gross, rating,etc...
-

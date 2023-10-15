@@ -72,13 +72,15 @@ enrich_studio_and_budget <- function(titles_and_year_df) {
         })
         
         # Store the result in the list
-        result <- tibble(title = titles_and_year_df[[title,1]], studio = as.character(studio), budget = as.character(budget))
+        result <- tibble(title = titles_and_year_df[title,][[1]], year = titles_and_year_df[title,][[2]],
+                         studio = as.character(studio), budget = as.character(budget))
         cat(title," ", titles_and_year_df[[title,1]]," ",studio," ", budget,"\n")
         results[[title]] <- result
       } 
       else if(inherits(search_webpage, "try-error") & check_internet_connection()){
         success <- TRUE
-        result <- tibble(title = titles_and_year_df[[title,1]], studio = NA, budget = NA)
+        result <- tibble(title = titles_and_year_df[title,][[1]], year = titles_and_year_df[title,][[2]],
+                         studio = NA, budget = NA)
         cat(title," ", titles_and_year_df[[title,1]]," ",NA," ", NA,"\n")
         results[[title]] <- result
       } else {
