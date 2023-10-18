@@ -1,7 +1,7 @@
-find_dob <- function(star_with_underscore){
-  dob_tibble <- tibble(star_with_underscore = character(), dob = character())
-  for(i in seq_along(star_with_underscore)){
-    dob_data <- find_single_dob(star_with_underscore[i])
+find_dob <- function(star_or_director){
+  dob_tibble <- tibble(star_or_director = character(), dob = character())
+  for(i in seq_along(star_or_director)){
+    dob_data <- find_single_dob(star_or_director[i])
     dob_tibble <- rbind(dob_tibble,dob_data)
   }
   return(dob_tibble)

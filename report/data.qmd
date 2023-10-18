@@ -14,6 +14,37 @@ Here we include the table containing the data + mention how we can relate the th
 Rather scrapping, wrangling and cleaning
 
 
+```{r}
+# Load and aggregate data
+
+#movies <- scrape_movies (n = 1e5,min_number_votes = 1e4,print_progress =TRUE)
+load("data/cleaned_data/bla bla.Rdata")
+
+#dob_stars <- find_dob( movies |> select(stars)
+#                       |> separate_rows(stars, sep = ",\\s*")
+#                       |> mutate (stars = str_replace_all(str_squish(stars),"\\s+","_")))
+load("bla bla")
+
+#dob_directors <- find_dob( movies |> select(directors)
+#                       |> separate_rows(directors, sep = ",\\s*")
+#                       |> mutate (directors = str_replace_all(str_squish(directors),"\\s+","_")))
+load("bla bla bla")
+
+#studio_and_budget <- enrich_studio_and_budget(movies[,c("title","year")])
+load("bla bla bla")
+
+
+#source("scripts/cleaning_functions/clean_studio_budget.R")
+load("cleaned_data/bla bla bla.Rdata")
+
+
+#aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
+
+
+```
+
+
+
 * (new) Data Transformations
 - certificate->age dependent
 - gross adjusted for inflation (time series to justify why we should account for inflation) 
@@ -21,4 +52,11 @@ Rather scrapping, wrangling and cleaning
 - Ticket sold estimate (current ticket price?)
 
 
+
+```{r}
+#load inflation data + other relevant data sets to make new columns
+
+
+
+```
 

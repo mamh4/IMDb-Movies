@@ -10,8 +10,6 @@ output: html_document
 
 
 ```{r}
-#libraries
-
 
 ```
 
