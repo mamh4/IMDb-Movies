@@ -6,6 +6,19 @@ source(here::here("scripts/setup.R"))
 
 * Sources
 * Description
+Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables.
+
+
+
 * Wrangling/cleaning
-* Spotting mistakes and missing data (could be part of EDA too)
-* Listing anomalies and outliers (could be part of EDA too)
+Rather scrapping, wrangling and cleaning
+
+
+* (new) Data Transformations
+- certificate->age dependent
+- gross adjusted for inflation (time series to justify why we should account for inflation) 
+- Budget adjusted for inflation (time series ,, ,, ,, ...)
+- Ticket sold estimate (current ticket price?)
+
+
+

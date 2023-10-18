@@ -7,3 +7,11 @@ output: html_document
 
 ```{r child = c('intro.qmd', 'data.qmd', 'eda.qmd', 'analysis.qmd', 'concl.qmd')}
 ```
+
+
+```{r}
+#libraries
+
+
+```
+

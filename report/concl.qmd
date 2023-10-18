@@ -7,3 +7,11 @@ source(here::here("scripts/setup.R"))
 * Take home message
 * Limitations
 * Future work?
+
+Gross does not capture merch, dvds, TV re-runs, being hosted on streaming servieces...
+
+Obviously being the best in by each variable does not gurantee that aiming for all of them makes a movie successful, for that we would need create a multivariate model (will rephrase later)
+
+
+
+-Future work can be scrapping more info or subscribe to an API,  

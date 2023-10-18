@@ -8,3 +8,19 @@ source(here::here("scripts/setup.R"))
 * Different methods considered
 * Competing approaches
 * Justifications
+
+Here we analyse the variables we believe have an influence on movie success
+
+* Genre
+
+* Run-time (Attention span)
+
+* Budget
+
+* Certificate
+
+* Studio
+
+* Director
+
+* Actor

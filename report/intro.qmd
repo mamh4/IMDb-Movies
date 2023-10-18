@@ -7,3 +7,5 @@ source(here::here("scripts/setup.R"))
 * Overview and Motivation
 * Related Work
 * Research questions
+
+Here we mention ideally what we want to do, we define what we mean by success, i,e longevity, number of views, audience reception, profitability

@@ -4,8 +4,17 @@
 source(here::here("scripts/setup.R"))
 ```
 
-* Mapping out the underlying structure
-* Identifying the most important variables
-* Univariate visualizations
-* Multivariate visualizations
-* Summary tables
+* Spotting mistakes and missing data (could be part of EDA too) [We named it data presentation]
+
+
+* Listing anomalies and outliers (could be part of EDA too) [This is nice section for longest film smallest budget etc..]
+
+
+* Why only top XXX? :P What graphs to stack?S 
+
+- Mapping out the underlying structure
+- Identifying the most important variables
+- Univariate visualizations
+- Multivariate visualizations
+- Summary tables
+
