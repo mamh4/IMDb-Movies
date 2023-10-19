@@ -9,6 +9,16 @@ source(here::here("scripts/setup.R"))
 Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables.
 
 
+inflation source:
+The Consumer Price Index (CPI) is a measure of the average change over time in the prices paid by urban consumers for a market basket of consumer goods and services. It is an accurate representation of inflation changes over the years.
+
+Content
+This dataset contains monthly CPI indexes from 1913 to 2022 (April). May through December 2022 information is not available, but I will update that as soon as it comes out.
+
+Acknowledgement
+Thanks to the US Bureau of Labor for making CPI data available. https://www.bls.gov/cpi/
+
+
 
 * Wrangling/cleaning
 Rather scrapping, wrangling and cleaning
@@ -16,52 +26,57 @@ Rather scrapping, wrangling and cleaning
 
 ```{r}
 # Source relevant scripts
-#
+source("../")
 
 
 
 # Load and aggregate data
 
 #movies <- scrape_movies (n = 1e5,min_number_votes = 1e4,print_progress =TRUE)
-load("data/cleaned_data/bla bla.Rdata")
+load("../data/scrapped_data/movies10k.Rdata")#data name movies
+
+
 
 #dob_stars <- find_dob( movies |> select(stars)
 #                       |> separate_rows(stars, sep = ",\\s*")
 #                       |> mutate (stars = str_replace_all(str_squish(stars),"\\s+","_")))
-load("bla bla")
+load("../data/scrapped_data/dob_stars10k.Rdata")#data name dob_table_stars
 
 #dob_directors <- find_dob( movies |> select(directors)
 #                       |> separate_rows(directors, sep = ",\\s*")
 #                       |> mutate (directors = str_replace_all(str_squish(directors),"\\s+","_")))
-load("bla bla bla")
+load("../data/scrapped_data/dob_directors10k.Rdata")#data name dob_table_directors
 
 #studio_and_budget <- enrich_studio_and_budget(movies[,c("title","year")])
-load("bla bla bla")
+load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_directors
 
 
-#source("scripts/cleaning_functions/clean_studio_budget.R")
-load("cleaned_data/bla bla bla.Rdata")
+source("../scripts/cleaning_functions/clean_studio_budget.R")
+#load("data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
 
 #source("clean_movies") TODO
 
 
-read.csv("inflation")
+CPI <- read.csv("../data/cleaned_data/inflation.csv")
 
+CPI <- CPI |>
+    mutate(CPI = rowMeans(CPI[,3:14],na.rm=T)) |> select(Year,CPI)
+
+CPI <- rbind(CPI,c(2023,302.340)) #US Federal Reserve Economic Data
+
+movies$genre <- str_squish(genre) #will be done in scraping
 
 #aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
-movies <- movies |> mutate(
-  studio = studio_and_budget$studio,
-  budget = studio_and_budget$budget) |>
-  left_join(inflation,by = "year") |> #check syntax
+movies <- movies |> 
+  left_join(CPI,join_by(year==Year)) |>
+  left_join(studio_and_budget, join_by(title,year)) |>
   separate_rows(stars, sep = ",\\s*") |>
-  mutate(dob_stars = dob_table_stars$stars) |>
+  left_join(dob_table_stars,join_by(stars)) |>
   separate_rows(directors, sep = ",\\s*") |>
-  left_join(dob_table_directors,) |> #pick column dob_directors
-  separate_rows(dob_directors, sep = ",\\s*") |>
+  left_join(dob_table_directors,join_by(directors)) |>
   separate_rows(genre, sep = ",\\s*") |>
-  mutate(dob_stars , dob_directors ) #change to date
-
+  separate_rows(studio, sep = ",\\s*")
 
 ```
 
@@ -77,7 +92,7 @@ movies <- movies |> mutate(
 
 ```{r}
 #load inflation data + other relevant data sets to make new columns
-
+movies$gross_inflation_adjusted <- "TODO"
 
 
 ```

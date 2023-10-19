@@ -1,3 +1,4 @@
+library(stringr)
 # Clean up Studio
 remove_references <- function(text) {
   # Remove everything between "[" and "]"
@@ -13,6 +14,9 @@ d <- str_squish(c)
 studio_and_budget$studio <- d
 
 # Clean up Budget
+
+orig_budget <- studio_and_budget$budget
+  
 a <- remove_references(studio_and_budget$budget)
 
 #exclude everything after opening brackets or or TODO
@@ -148,12 +152,25 @@ k <- sapply(j, convert_to_numeric)
 
 studio_and_budget$budget <- k
 
-# make sure it worked
-a[!is.na(b)&is.na(c)]
+studio_and_budget$orig_budget <- orig_budget
 
 
-
-
-
-## Save cleaned data
-"$105–190 million"
+# clean-up memory
+rm(
+  a,
+  b,
+  c,
+  d,
+  e,
+  f,
+  g,
+  h,
+  i,
+  j,
+  k,
+  orig_budget,
+  convert_to_numeric,
+  extract_million,
+  remove_references,
+  replace_excess_million
+)

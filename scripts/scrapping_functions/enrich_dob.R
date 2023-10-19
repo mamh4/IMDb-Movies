@@ -17,13 +17,13 @@ find_single_dob <- function(star) {
       html_node("span.bday") %>%
       html_text()
     
-    cat("Date of Birth for ", star_with_underscore, ": ", dob, "\n")
+    cat("Date of Birth for ", star, ": ", dob, "\n")
     
     # Return a tibble with "title" and "dob" columns
-    tibble(title = star_with_underscore, dob = dob)
+    tibble(title = star, dob = dob)
   }, error = function(e) {
-    cat("Error occurred for ", star_with_underscore, ": ", conditionMessage(e), "\n")
+    cat("Error occurred for ", star, ": ", conditionMessage(e), "\n")
     # Return a tibble with "title" and "dob" columns, where "dob" is NA
-    tibble(title = star_with_underscore, dob = NA)
+    tibble(title = star, dob = NA)
   })
 }
