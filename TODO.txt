@@ -4,3 +4,4 @@
 - work/scrape on an estimate for the ticket price. - Pierre  
 - Scrape/ work on data for population size. - Pierre
 - Check that the data script runs as expected on full data set - Mohamed
+- Check rendering the quatro document how to hide code output etc.. -Mohamed

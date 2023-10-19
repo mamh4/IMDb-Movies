@@ -24,7 +24,9 @@ Thanks to the US Bureau of Labor for making CPI data available. https://www.bls.
 Rather scrapping, wrangling and cleaning
 
 
-```{r}
+```{r, echo = FALSE, message = FALSE}
+# Read data
+
 # Source relevant scripts
 source("../scripts/scrapping_functions/scrape_movies.R")
 source("../scripts/scrapping_functions/enrich_dob.R")
@@ -55,7 +57,7 @@ load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_dir
 
 
 #source("../scripts/cleaning_functions/clean_studio_budget.R")
-load("data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
+load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
 
 #source("clean_movies") TODO
@@ -70,6 +72,7 @@ CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
 
 
 #aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
+suppressWarnings({
 movies <- movies |> 
   left_join(CPI,join_by(year==Year)) |>
   left_join(studio_and_budget, join_by(title,year)) |>
@@ -79,6 +82,9 @@ movies <- movies |>
   left_join(dob_table_directors,join_by(directors)) |>
   separate_rows(genre, sep = ",\\s*") |>
   separate_rows(studio, sep = ",\\s*")
+})
+
+# ToDo Beast 2022 fix the budget and studio for the right one
 
 ```
 
