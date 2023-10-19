@@ -26,46 +26,48 @@ Rather scrapping, wrangling and cleaning
 
 ```{r}
 # Source relevant scripts
-source("../")
+source("../scripts/scrapping_functions/scrape_movies.R")
+source("../scripts/scrapping_functions/enrich_dob.R")
+source("../scripts/scrapping_functions/enrich_studio_and_budget.R")
 
 
+# Load and aggregate data switch load with functions to try on new data set
 
-# Load and aggregate data
-
-#movies <- scrape_movies (n = 1e5,min_number_votes = 1e4,print_progress =TRUE)
+#movies <- scrape_movies (n = 10,min_number_votes = 1e4,print_progress =TRUE)
 load("../data/scrapped_data/movies10k.Rdata")#data name movies
 
 
 
-#dob_stars <- find_dob( movies |> select(stars)
-#                       |> separate_rows(stars, sep = ",\\s*")
-#                       |> mutate (stars = str_replace_all(str_squish(stars),"\\s+","_")))
+#dob_table_stars <- find_dob( movies |> select(stars) |>
+#                       separate_rows(stars, sep = ",\\s*")|>
+#                       unique())
 load("../data/scrapped_data/dob_stars10k.Rdata")#data name dob_table_stars
 
-#dob_directors <- find_dob( movies |> select(directors)
-#                       |> separate_rows(directors, sep = ",\\s*")
-#                       |> mutate (directors = str_replace_all(str_squish(directors),"\\s+","_")))
+
+#dob_table_directors <- find_dob( movies |> select(directors) |>
+#                       separate_rows(directors, sep = ",\\s*")
+#                       |> unique())
 load("../data/scrapped_data/dob_directors10k.Rdata")#data name dob_table_directors
+
 
 #studio_and_budget <- enrich_studio_and_budget(movies[,c("title","year")])
 load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_directors
 
 
-source("../scripts/cleaning_functions/clean_studio_budget.R")
-#load("data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
+#source("../scripts/cleaning_functions/clean_studio_budget.R")
+load("data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
 
 #source("clean_movies") TODO
+movies$genre <- str_squish(movies$genre) #will be done in scraping
 
 
-CPI <- read.csv("../data/cleaned_data/inflation.csv")
+# Apparently the dot operator needs %>% not yet implemented in base r using |>
+CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
+    mutate(CPI = rowMeans(.[,3:14],na.rm=T)) %>%
+    select(Year,CPI) %>%
+    rbind(data.frame(Year = 2023,CPI = 302.340)) #US Federal Reserve Economic Data
 
-CPI <- CPI |>
-    mutate(CPI = rowMeans(CPI[,3:14],na.rm=T)) |> select(Year,CPI)
-
-CPI <- rbind(CPI,c(2023,302.340)) #US Federal Reserve Economic Data
-
-movies$genre <- str_squish(genre) #will be done in scraping
 
 #aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
 movies <- movies |> 
