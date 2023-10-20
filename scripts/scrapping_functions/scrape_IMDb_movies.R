@@ -2,9 +2,15 @@
 library(rvest)
 library(dplyr)
 library(stringr)
+library(xml2)
+library(XML)
+library("readr")
+library(ggplot2)
+library(patchwork)
 library(tidyr)
+library(zoo)
 
-scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_progress = FALSE, return_next_url = FALSE, start_url = 'https://www.imdb.com/search/title/?title_type=feature&num_votes=1000,&sort=user_rating,desc&start=1&ref_=adv_nxt'){
+scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_progress = FALSE, return_next_url = FALSE, start_url = 'empty'){
   
   n <- 1 + n_end - n_start
   
@@ -33,19 +39,21 @@ scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_
     n_pages_to_scrape <- (n_full_pages + 1)
   }
   
-  if (start_url == 'https://www.imdb.com/search/title/?title_type=feature&num_votes=1000,&sort=user_rating,desc&start=1&ref_=adv_nxt'){
+  if (start_url == 'empty'){
     url <- paste0('https://www.imdb.com/search/title/?title_type=feature&num_votes=', min_number_votes, ',&sort=user_rating,desc&start=', (n_start%% 50), '&ref_=adv_nxt')
     
-    for (i in 1:(n_start%/% 50 )){
-      response <- httr::GET(url)
-      # Extract movie information
-      page <- read_html(response, "text") #read_html(content(response, "text"))#read_html(content(response, "text"))
-      url_extension <- (page |> html_nodes("a.lister-page-next") |> html_attr("href"))[1]
-      url <- paste0('https://www.imdb.com', url_extension)
-      if(print_progress){
-        time_difference <-
-          as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-        cat("Page ", ((i*50)+(n_start%% 50)), " - Time Elapsed: ", time_difference, " seconds\n")
+    if ((n_start %/% 50) > 0 ){
+      for (i in 1:(n_start %/% 50 )){
+        response <- httr::GET(url)
+        # Extract movie information
+        page <- read_html(response, "text") #read_html(content(response, "text"))#read_html(content(response, "text"))
+        url_extension <- (page |> html_nodes("a.lister-page-next") |> html_attr("href"))[1]
+        url <- paste0('https://www.imdb.com', url_extension)
+        if(print_progress){
+          time_difference <-
+            as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+          cat("Page ", ((i*50)+(n_start%% 50)), " - Time Elapsed: ", time_difference, " seconds\n")
+        }
       }
     }
   }
@@ -55,6 +63,11 @@ scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_
   
   
   for (i in 1:n_pages_to_scrape) {
+    cat("Progress: ", (100*i/n_pages_to_scrape), "percent \n")
+    time_difference <-
+      as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+    cat("Page: ", i , "Time Elapsed: ", time_difference, " seconds\n")
+    cat(url, "\n")
     response <- httr::GET(url)
     # Extract movie information
     page <- read_html(response, "text") #read_html(content(response, "text"))#read_html(content(response, "text"))
@@ -64,8 +77,9 @@ scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_
     } else {
       n_movies_to_scrape <- 50
     }
-    
+    cat("Movie: ")
     for (movie_index in 1:n_movies_to_scrape) {
+      cat(movie_index, " ")
       title_xpath <-
         paste0('//*[@id="main"]/div/div[3]/div/div[',
                movie_index,
@@ -204,13 +218,13 @@ scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_
       
       movies <- add_row(
         movies,
-        title = title,
+        title = as.character(title),
         year = year,
-        certificate = certificate,
+        certificate = as.character(certificate),
         run_time = run_time,
-        genre = genre,
-        directors = directors,
-        stars = stars,
+        genre = as.character(genre),
+        directors = as.character(directors),
+        stars = as.character(stars),
         rating = rating,
         metascore = metascore,
         votes = votes,
@@ -219,6 +233,8 @@ scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_
       
       
     }
+    cat(" \n")
+    cat("Supposed number of movies", (i*50) , "vs: ", count(movies)[[1]] , " \n")
     
     
     url_extension <-
@@ -245,10 +261,148 @@ scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_
 
 test_movies <- scrape_movies(n_start=53, n_end=205)
 
-test_movies_1 <- scrape_movies(n_start=53, n_end=205, min_number_votes = 1000, print_progress = FALSE, return_next_url = TRUE)
-
-
+test_movies_1 <- scrape_movies(n_start=1, n_end=205, min_number_votes = 1000, print_progress = FALSE, return_next_url = TRUE)
 
 test_movies_2 <- scrape_movies(n_start=253, n_end=307, min_number_votes = 1000, print_progress = FALSE, return_next_url = TRUE, start_url = test_movies_1[[2]])
 
 movies_2 <- test_movies_2[[1]]
+
+
+fullMovies <- scrape_movies(n_start=1, n_end=5000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = 'empty')
+
+
+
+fullMovies <- scrape_movies(n_start=1, n_end=25000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_01.RData")))
+
+url01 <- fullMovies[[2]]
+
+
+
+
+fullMovies <- scrape_movies(n_start=25001, n_end=50000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = fullMovies[[2]])
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_02.RData")))
+
+url02 <- fullMovies[[2]]
+
+
+fullMovies <- scrape_movies(n_start=50001, n_end=75000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url02)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_03.RData")))
+
+url03 <- fullMovies[[2]]
+
+
+fullMovies <- scrape_movies(n_start=75001, n_end=100000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url03)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_04.RData")))
+
+url04 <- fullMovies[[2]]
+
+
+fullMovies <- scrape_movies(n_start=100001, n_end=125000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url04)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_05.RData")))
+
+url05 <- fullMovies[[2]]
+
+
+fullMovies <- scrape_movies(n_start=125001, n_end=150000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url05)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_06.RData")))
+
+url06 <- fullMovies[[2]]
+
+
+fullMovies <- scrape_movies(n_start=150001, n_end=175000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url06)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_07.RData")))
+
+url07 <- fullMovies[[2]]
+
+
+fullMovies <- scrape_movies(n_start=175001, n_end=200000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url07)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_08.RData")))
+
+url08 <- fullMovies[[2]]
+
+
+fullMovies <- scrape_movies(n_start=200001, n_end=225000, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url08)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_09.RData")))
+
+url09 <- fullMovies[[2]]
+
+
+22750
+
+fullMovies <- scrape_movies(n_start=225001, n_end=247750, min_number_votes = 0, print_progress = FALSE, return_next_url = TRUE, start_url = url09)
+
+currentBatch <- fullMovies[[1]]
+
+save(currentBatch, file=(file.path("fullIMDbData_10.RData")))
+
+url10 <- fullMovies[[2]]
+
+
+
+load("fullIMDbData_01.RData")
+movies <- currentBatch
+
+load("fullIMDbData_02.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_03.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_04.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_05.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_06.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_07.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_08.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_09.RData")
+movies <- full_join(movies, currentBatch)
+
+load("fullIMDbData_10.RData")
+movies <- full_join(movies, currentBatch)
+
+
+
+
+save(movies, file=(file.path("fullIMDbData.RData")))
+
+load("fullIMDbData.RData")
+
+p3 <- movies |> separate_rows(genre, sep =",\\s*") 
+
