@@ -111,7 +111,7 @@ certificate_to_age <- function(cert, year){
 }
 ```
 
-```{t}
+```{}
   
   #if(is.na(cert)){return(cert)}
   #if(year < 1970 & cert == "R"){
@@ -194,7 +194,7 @@ df_genre_sum <- df_genre %>%
   group_by(genre) %>%
   filter(n()>=0) %>%
   summarise( counted = sum(n())) %>%
-  arrange(,counted)
+  arrange(counted)
 df_genre_sum
 
 # useless
@@ -262,6 +262,6 @@ df_directors %>%
   mutate(genre = str_squish(genre)) %>%
   select(directors,gross,genre) %>%
   group_by(directors,genre) %>%
-  ggplot(,aes( x = directors, y= gross)) +
+  ggplot(aes( x = directors, y= gross)) +
   geom_bar(aes( x = directors, fill = genre))
 ```
