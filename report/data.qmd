@@ -2,6 +2,10 @@
 
 ```{r, echo = FALSE, message = FALSE}
 source(here::here("scripts/setup.R"))
+#libraries
+library(ggplot2)
+library(patchwork)
+library(dplyr)
 ```
 
 * Sources
@@ -20,7 +24,22 @@ load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
 movies[is.na(movies$votes),"votes"] <- 0
 
 #Pick a cut-off point
-movies |>
+a <- movies |>
+  mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
+  select(bin,rating) |> 
+  group_by(bin) |>
+  summarise(avg_rating = mean(rating,na.rm = T)) |>
+  ggplot(aes(x=bin,y=avg_rating))+
+  labs(title = "A logarithmic trend can be observed after excluding movies with less than 10k votes"
+       ,x="Number of Votes", y = "Average Rating") +
+  geom_point()+
+  geom_smooth()+
+  scale_x_continuous(breaks = seq(0,3e6,600000))+
+  scale_y_continuous(limits = c(0,10),breaks = seq(0,10,2))+
+  theme_minimal()
+
+
+b <- movies |>
   mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
   select(bin,rating) |> 
   group_by(bin) |>
@@ -28,15 +47,22 @@ movies |>
   ggplot(aes(x=bin,y=avg_rating))+
   labs(x="Number of Votes", y = "Average Rating") +
   geom_point()+
+  geom_point(col="red",data = movies |>
+                              mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
+                              select(bin,rating) |> 
+                              group_by(bin) |>
+                              summarise(avg_rating = mean(rating,na.rm = T)) |>
+                              filter(bin<=10000))+
   geom_smooth()+
-  scale_x_continuous(limits = c(0,500000))+#breaks = seq(0,3e6,300000))+
+  coord_cartesian(xlim = c(0, 180000))+
   scale_y_continuous(limits = c(0,10),breaks = seq(0,10,2))+
-  geom_vline(xintercept = 5e4)+
+  geom_vline(xintercept = 10000,linetype = "dashed")+
   theme_minimal()
   
+(a | b)
 
 ```
-Conclusion: cut-off at 50k
+Conclusion: cut-off at 10k
 
 
 
@@ -60,7 +86,7 @@ Rather scrapping, wrangling and cleaning
 # Read other data
 
 movies <- movies |>
-  filter(votes>=25000)
+  filter(votes>=10000)
 
 
 # Source relevant scripts
