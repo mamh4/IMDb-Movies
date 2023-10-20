@@ -10,7 +10,7 @@ library(dplyr)
 
 * Sources
 * Description
-Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables.
+Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables. (highlight that the gross amounts are only from US and not from all over)
 
 
 Talk about the large data set and show that it's awful and that we need to pick a cut-off point, we decide the cut-off point based on rating and not meta score or gross as the rating values as feel like it's more robust?
@@ -65,7 +65,7 @@ b <- movies |>
 Conclusion: cut-off at 10k
 
 
-
+Now that we decided on the cut-off of 10k we end up with XXX movie titles which we try to enrich with information such as the date of births of actors and directors the studio(s) that produced the film and the budget. Since we have movies dating back from 1900s we decided to include the average annual consumer price index. 
 
 inflation source:
 The Consumer Price Index (CPI) is a measure of the average change over time in the prices paid by urban consumers for a market basket of consumer goods and services. It is an accurate representation of inflation changes over the years.
@@ -116,10 +116,6 @@ load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_dir
 load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
 
-#source("clean_movies") TODO
-movies$genre <- str_squish(movies$genre) #will be done in scraping
-
-
 # Apparently the dot operator needs %>% not yet implemented in base r using |>
 CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
     mutate(CPI = rowMeans(.[,3:14],na.rm=T)) %>%
@@ -128,6 +124,7 @@ CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
 
 
 #aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
+#Warning is due two films "Beast 2022" when doing a left join, we adjust them afterwards.
 suppressWarnings({
 movies <- movies |> 
   left_join(CPI,join_by(year==Year)) |>
@@ -140,7 +137,9 @@ movies <- movies |>
   separate_rows(studio, sep = ",\\s*")
 })
 
-
+# There are two movies named beast from the year 2022.
+movies[movies$title=="Beast" & movies$run_time ==93,"budget"] <- 36e6
+movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pictures"
 
 ```
 
@@ -156,7 +155,11 @@ movies <- movies |>
 
 ```{r}
 #load inflation data + other relevant data sets to make new columns
-movies$gross_inflation_adjusted <- "TODO"
+todays_CPI <- CPI[CPI$Year==2023,"CPI"]
+movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
+movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
+
+
 
 
 ```

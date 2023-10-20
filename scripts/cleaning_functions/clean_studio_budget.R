@@ -108,7 +108,7 @@ studio_and_budget$budget <- k
 
 
 
-if(nrow(studio_and_budget)==10000) {
+if(nrow(studio_and_budget)>=10000) {
   #Manual adjustments: boundary cases range is from thousand to million. i.e 800,000- 1 million
   studio_and_budget$budget[2967] <- studio_and_budget$budget[2967] / 1e6
   studio_and_budget$budget[85] <- studio_and_budget$budget[85] / 1e6
