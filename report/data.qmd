@@ -26,8 +26,13 @@ movies |>
   group_by(bin) |>
   summarise(avg_rating = mean(rating,na.rm = T)) |>
   ggplot(aes(x=bin,y=avg_rating))+
+  labs(x="Number of Votes", y = "Average Rating") +
   geom_point()+
-  geom_smooth()
+  geom_smooth()+
+  scale_x_continuous(limits = c(0,500000))+#breaks = seq(0,3e6,300000))+
+  scale_y_continuous(limits = c(0,10),breaks = seq(0,10,2))+
+  geom_vline(xintercept = 5e4)+
+  theme_minimal()
   
 
 ```
@@ -53,6 +58,10 @@ Rather scrapping, wrangling and cleaning
 
 ```{r, echo = FALSE, message = FALSE}
 # Read other data
+
+movies <- movies |>
+  filter(votes>=25000)
+
 
 # Source relevant scripts
 source("../scripts/scrapping_functions/enrich_dob.R")
@@ -105,7 +114,7 @@ movies <- movies |>
   separate_rows(studio, sep = ",\\s*")
 })
 
-# ToDo Beast 2022 fix the budget and studio for the right one
+
 
 ```
 
