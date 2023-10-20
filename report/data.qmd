@@ -9,6 +9,33 @@ source(here::here("scripts/setup.R"))
 Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables.
 
 
+Talk about the large data set and show that it's awful and that we need to pick a cut-off point, we decide the cut-off point based on rating and not meta score or gross as the rating values as feel like it's more robust?
+```{r}
+# Scrape movies
+source("../scripts/scrapping_functions/scrape_movies.R")
+#movies <- scrape_movies (n = 10,min_number_votes = 1e4,print_progress =TRUE)
+load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
+
+# set NA number of votes to 0
+movies[is.na(movies$votes),"votes"] <- 0
+
+#Pick a cut-off point
+movies |>
+  mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
+  select(bin,rating) |> 
+  group_by(bin) |>
+  summarise(avg_rating = mean(rating,na.rm = T)) |>
+  ggplot(aes(x=bin,y=avg_rating))+
+  geom_point()+
+  geom_smooth()
+  
+
+```
+Conclusion: cut-off at 50k
+
+
+
+
 inflation source:
 The Consumer Price Index (CPI) is a measure of the average change over time in the prices paid by urban consumers for a market basket of consumer goods and services. It is an accurate representation of inflation changes over the years.
 
@@ -25,20 +52,14 @@ Rather scrapping, wrangling and cleaning
 
 
 ```{r, echo = FALSE, message = FALSE}
-# Read data
+# Read other data
 
 # Source relevant scripts
-source("../scripts/scrapping_functions/scrape_movies.R")
 source("../scripts/scrapping_functions/enrich_dob.R")
 source("../scripts/scrapping_functions/enrich_studio_and_budget.R")
 
 
 # Load and aggregate data switch load with functions to try on new data set
-
-#movies <- scrape_movies (n = 10,min_number_votes = 1e4,print_progress =TRUE)
-load("../data/scrapped_data/movies10k.Rdata")#data name movies
-
-
 
 #dob_table_stars <- find_dob( movies |> select(stars) |>
 #                       separate_rows(stars, sep = ",\\s*")|>
