@@ -1,7 +1,7 @@
-- Aggregate all data (one object we all use). - Mohamed
 - Check the movies data set, clean up if possible. - Pierre
 - Transform the certificate column into ages. - Arno
-- Adjust inflation data to avg inflation by year. - Mohamed
 - Adjust budget and gross for inflation. -  Mohamed
 - work/scrape on an estimate for the ticket price. - Pierre  
 - Scrape/ work on data for population size. - Pierre
+- Check that the data script runs as expected on full data set - Mohamed
+- Check rendering the quatro document how to hide code output etc.. -Mohamed

@@ -1,3 +1,4 @@
+library(stringr)
 # Clean up Studio
 remove_references <- function(text) {
   # Remove everything between "[" and "]"
@@ -13,6 +14,9 @@ d <- str_squish(c)
 studio_and_budget$studio <- d
 
 # Clean up Budget
+
+orig_budget <- studio_and_budget$budget
+  
 a <- remove_references(studio_and_budget$budget)
 
 #exclude everything after opening brackets or or TODO
@@ -104,56 +108,72 @@ studio_and_budget$budget <- k
 
 
 
-
-#Manual adjustments: boundary cases range is from thousand to million. i.e 800,000- 1 million
-studio_and_budget$budget[2967] <- studio_and_budget$budget[2967]/1e6
-studio_and_budget$budget[85] <- studio_and_budget$budget[85]/1e6
-
-#Manual Adjustment thousand entry in text instead of million
-studio_and_budget$budget[8440] <- studio_and_budget$budget[8440]*1e4
-
-
-studio_and_budget$budget[4496] <- NA
-#d[2967]
-#d[85]
-
-
-
-convert_to_numeric <- function(text) {
+if(nrow(studio_and_budget)==10000) {
+  #Manual adjustments: boundary cases range is from thousand to million. i.e 800,000- 1 million
+  studio_and_budget$budget[2967] <- studio_and_budget$budget[2967] / 1e6
+  studio_and_budget$budget[85] <- studio_and_budget$budget[85] / 1e6
   
-  cleaned_text <- gsub("[^0-9.,]", "", text)
-  
-  # Replace any commas inside numbers with periods
-  cleaned_text <- gsub("(?<=\\d),(?=\\d)", ".", cleaned_text, perl = TRUE)
-  
-  # Replace periods only if they are followed by three digits (for thousands separators)
-  cleaned_text <- gsub("\\.(?=\\d{3})", "", cleaned_text, perl = TRUE)
-  
-  # Replace any remaining commas with empty strings
-  cleaned_text <- gsub(",", "", cleaned_text)
-  
-  # Convert to numeric
-  numeric_value <- as.numeric(cleaned_text)
+  #Manual Adjustment thousand entry in text instead of million
+  studio_and_budget$budget[8440] <- studio_and_budget$budget[8440] * 1e4
   
   
-  if (grepl("million", tolower(text))) {
-    numeric_value <- numeric_value * 1e6
-  }
-  
-  return(numeric_value)
+  studio_and_budget$budget[4496] <- NA
+  #d[2967]
+  #d[85]
 }
 
-k <- sapply(j, convert_to_numeric)
+
+studio_and_budget$orig_budget <- orig_budget
 
 
-studio_and_budget$budget <- k
+# clean-up memory
+rm(
+  a,
+  b,
+  c,
+  d,
+  e,
+  f,
+  g,
+  h,
+  i,
+  j,
+  k,
+  orig_budget,
+  convert_to_numeric,
+  extract_million,
+  remove_references,
+  replace_excess_million
+)
 
-# make sure it worked
-a[!is.na(b)&is.na(c)]
 
 
 
-
-
-## Save cleaned data
-"$105–190 million"
+# convert_to_numeric <- function(text) {
+#   
+#   cleaned_text <- gsub("[^0-9.,]", "", text)
+#   
+#   # Replace any commas inside numbers with periods
+#   cleaned_text <- gsub("(?<=\\d),(?=\\d)", ".", cleaned_text, perl = TRUE)
+#   
+#   # Replace periods only if they are followed by three digits (for thousands separators)
+#   cleaned_text <- gsub("\\.(?=\\d{3})", "", cleaned_text, perl = TRUE)
+#   
+#   # Replace any remaining commas with empty strings
+#   cleaned_text <- gsub(",", "", cleaned_text)
+#   
+#   # Convert to numeric
+#   numeric_value <- as.numeric(cleaned_text)
+#   
+#   
+#   if (grepl("million", tolower(text))) {
+#     numeric_value <- numeric_value * 1e6
+#   }
+#   
+#   return(numeric_value)
+# }
+# 
+# k <- sapply(j, convert_to_numeric)
+# 
+# 
+# studio_and_budget$budget <- k

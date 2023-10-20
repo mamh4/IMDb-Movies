@@ -9,59 +9,103 @@ source(here::here("scripts/setup.R"))
 Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables.
 
 
+Talk about the large data set and show that it's awful and that we need to pick a cut-off point, we decide the cut-off point based on rating and not meta score or gross as the rating values as feel like it's more robust?
+```{r}
+# Scrape movies
+source("../scripts/scrapping_functions/scrape_movies.R")
+#movies <- scrape_movies (n = 10,min_number_votes = 1e4,print_progress =TRUE)
+load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
+
+# set NA number of votes to 0
+movies[is.na(movies$votes),"votes"] <- 0
+
+#Pick a cut-off point
+movies |>
+  mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
+  select(bin,rating) |> 
+  group_by(bin) |>
+  summarise(avg_rating = mean(rating,na.rm = T)) |>
+  ggplot(aes(x=bin,y=avg_rating))+
+  geom_point()+
+  geom_smooth()
+  
+
+```
+Conclusion: cut-off at 50k
+
+
+
+
+inflation source:
+The Consumer Price Index (CPI) is a measure of the average change over time in the prices paid by urban consumers for a market basket of consumer goods and services. It is an accurate representation of inflation changes over the years.
+
+Content
+This dataset contains monthly CPI indexes from 1913 to 2022 (April). May through December 2022 information is not available, but I will update that as soon as it comes out.
+
+Acknowledgement
+Thanks to the US Bureau of Labor for making CPI data available. https://www.bls.gov/cpi/
+
+
 
 * Wrangling/cleaning
 Rather scrapping, wrangling and cleaning
 
 
-```{r}
+```{r, echo = FALSE, message = FALSE}
+# Read other data
+
 # Source relevant scripts
-#
+source("../scripts/scrapping_functions/enrich_dob.R")
+source("../scripts/scrapping_functions/enrich_studio_and_budget.R")
 
 
+# Load and aggregate data switch load with functions to try on new data set
 
-# Load and aggregate data
+#dob_table_stars <- find_dob( movies |> select(stars) |>
+#                       separate_rows(stars, sep = ",\\s*")|>
+#                       unique())
+load("../data/scrapped_data/dob_stars10k.Rdata")#data name dob_table_stars
 
-#movies <- scrape_movies (n = 1e5,min_number_votes = 1e4,print_progress =TRUE)
-load("data/cleaned_data/bla bla.Rdata")
 
-#dob_stars <- find_dob( movies |> select(stars)
-#                       |> separate_rows(stars, sep = ",\\s*")
-#                       |> mutate (stars = str_replace_all(str_squish(stars),"\\s+","_")))
-load("bla bla")
+#dob_table_directors <- find_dob( movies |> select(directors) |>
+#                       separate_rows(directors, sep = ",\\s*")
+#                       |> unique())
+load("../data/scrapped_data/dob_directors10k.Rdata")#data name dob_table_directors
 
-#dob_directors <- find_dob( movies |> select(directors)
-#                       |> separate_rows(directors, sep = ",\\s*")
-#                       |> mutate (directors = str_replace_all(str_squish(directors),"\\s+","_")))
-load("bla bla bla")
 
 #studio_and_budget <- enrich_studio_and_budget(movies[,c("title","year")])
-load("bla bla bla")
+load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_directors
 
 
-#source("scripts/cleaning_functions/clean_studio_budget.R")
-load("cleaned_data/bla bla bla.Rdata")
+#source("../scripts/cleaning_functions/clean_studio_budget.R")
+load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
 
 #source("clean_movies") TODO
+movies$genre <- str_squish(movies$genre) #will be done in scraping
 
 
-read.csv("inflation")
+# Apparently the dot operator needs %>% not yet implemented in base r using |>
+CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
+    mutate(CPI = rowMeans(.[,3:14],na.rm=T)) %>%
+    select(Year,CPI) %>%
+    rbind(data.frame(Year = 2023,CPI = 302.340)) #US Federal Reserve Economic Data
 
 
 #aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
-movies <- movies |> mutate(
-  studio = studio_and_budget$studio,
-  budget = studio_and_budget$budget) |>
-  left_join(inflation,by = "year") |> #check syntax
+suppressWarnings({
+movies <- movies |> 
+  left_join(CPI,join_by(year==Year)) |>
+  left_join(studio_and_budget, join_by(title,year)) |>
   separate_rows(stars, sep = ",\\s*") |>
-  mutate(dob_stars = dob_table_stars$stars) |>
+  left_join(dob_table_stars,join_by(stars)) |>
   separate_rows(directors, sep = ",\\s*") |>
-  left_join(dob_table_directors,) |> #pick column dob_directors
-  separate_rows(dob_directors, sep = ",\\s*") |>
+  left_join(dob_table_directors,join_by(directors)) |>
   separate_rows(genre, sep = ",\\s*") |>
-  mutate(dob_stars , dob_directors ) #change to date
+  separate_rows(studio, sep = ",\\s*")
+})
 
+# ToDo Beast 2022 fix the budget and studio for the right one
 
 ```
 
@@ -77,7 +121,7 @@ movies <- movies |> mutate(
 
 ```{r}
 #load inflation data + other relevant data sets to make new columns
-
+movies$gross_inflation_adjusted <- "TODO"
 
 
 ```
