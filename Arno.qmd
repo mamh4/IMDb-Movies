@@ -26,3 +26,242 @@ You can add options to executable code like this
 The `echo: false` option disables the printing of code (only output is displayed).
 
 Real Arno Joining Repo
+
+##########################################################################################################################
+##########################################################################################################################
+##########################################################################################################################
+```{r}
+library(tibble)
+library(readr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(forcats)
+library(stringr)
+```
+
+```{r}
+load("data/full_movies_v1.RData")
+```
+
+```{r}
+#test <-movies %>% select(title,year,certificate) %>% filter(year <= 1970 & certificate == "R" | certificate == "X")
+```
+
+```{r}
+#df_cert_clean <- movies %>% 
+#  mutate(certificate = sub("[\\\n].*",NA, certificate)) %>% 
+#  select(certificate) %>% 
+#  group_by(certificate) %>% 
+#  summarise(count = n())
+```
+
+```{}
+data_clean_certofgenre_v2 <- movies %>% 
+  mutate(certificate = ifelse(certificate == "\nAction            ", NA, certificate), 
+        certificate = ifelse(certificate == "\nAction, Comedy, Crime            ", NA, certificate),
+        certificate = ifelse(certificate == "\nAction, Comedy, Thriller            ", NA, certificate),
+        certificate = ifelse(certificate == "\nAction, Crime, Thriller            ", NA, certificate),
+        certificate = ifelse(certificate == "\nAction, Drama            ", NA, certificate),
+        certificate = ifelse(certificate == "\nAction, Drama, Fantasy            ", NA, certificate),
+        certificate = ifelse(certificate == "\nAction, Drama, Thriller            " , NA, certificate),
+        certificate = ifelse(certificate == "\nAction, Mystery            ", NA, certificate),
+        certificate = ifelse(certificate == "\nAction, Thriller            ", NA, certificate),
+        certificate = ifelse(certificate == "\nAdventure            ", NA, certificate))
+
+ddd <- data_clean_certofgenre %>% select(certificate) %>% group_by(certificate) %>% summarise(count = n()) 
+  
+```
+
+```{r message=TRUE}
+movies <- movies %>% 
+  mutate(certificate = sub("[\\\n].*",NA, certificate)) %>% 
+  mutate(certificate = as.factor(str_squish(certificate))) %>%
+  mutate(certificate = fct_recode(certificate, 
+                                  "0" = "Approved",
+                                  "0" = "G",
+                                  "0" = "GP",
+                                  "0" = "M",
+                                  "0" = "M/PG",
+                                  "18" = "NC-17", 
+                                  NULL = "Not Rated",
+                                  "0" = "PG",
+                                  "13" = "PG-13", 
+                                  "0" = "Passed",
+                                  "R" = "R", # depending on the year of release of the movie the certificate corresponds to a different age, it will be dealt with in a later function.
+                                  NULL = "Unrated",
+                                  "17" = "X"))
+```
+
+```{r}
+certificate_to_age <- function(cert, year){
+  new_cert_vect = cert # initializing a new vector with the value of certificate
+  for (i in 1:length(cert)){
+      if(is.na(year[i]) | is.na(cert[i])){next} # skipping to next loop if either value is NA
+    
+      if(year[i]>=1970 & cert[i] == "R"){ # modifying the certificate value "R" to 17 if the year is above 1970
+        new_cert_vect[i]="17"
+      }
+      else if (year[i]<1970 & cert[i] == "R"){
+        new_cert_vect[i]="16"
+      }
+  }
+  return(new_cert_vect)  
+}
+```
+
+```{t}
+  
+  #if(is.na(cert)){return(cert)}
+  #if(year < 1970 & cert == "R"){
+   # return("16")
+  #} else if(year >= 1970 & cert =="R" ){
+    #return("17")
+  #} else {
+   # return(cert)
+  #}
+
+
+#cert_to_age <- function(cert,year){
+  #print(typeof(cert))
+ # v <- ifelse(year >= 1970 & cert =="R", "17", cert)
+  #print(v)
+  #v_2 <-ifelse(year < 1970 & v =="R", "16", cert)
+  #print(v_2)
+  #return(v_2)
+#}
+```
+
+```{r message=TRUE}
+movies <- movies %>%
+  mutate(certificate = certificate_to_age(certificate,year) ) 
+
+#cert_df <- movies %>% select(certificate) %>% group_by(certificate) %>% summarise(count = n()) 
+```
+
+
+
+
+
+```{r}
+movies %>% 
+  group_by(year) %>%
+  ggplot(mapping = aes(x = year, y = )) + geom_bar()
+
+```
+
+more competition now than a few years back
+
+```{r}
+attention_span_df <- movies %>% mutate(bins = run_time %/% 90 )
+
+ggplot(data = data_1 , mapping = aes( x = run_time , y = gross/100000, color = year )) +
+  #scale_y_continuous(breaks = seq(0, 600000, by = 50000)) +
+  geom_point() 
+```
+```{r}
+attention_span_df %>% 
+  select(bins,run_time,year,gross,votes) %>%
+  group_by(bins,year) %>%
+  summarise(avggross = mean(gross,na.rm = T),
+            avgvotes = mean(votes)) %>%
+  ggplot( aes(x = year , y = avgvotes, color = factor(bins))) +
+  geom_point(aes(color = factor(bins))) +
+  geom_line(aes(color = factor(bins)))+
+  #geom_smooth(aes(x= year, y = avggross))
+  facet_grid(~bins)
+  
+```
+
+
+```{r}
+data_2 <- movies %>%
+  group_by(genre) %>%
+  filter(n()>=100)
+```
+
+```{r}
+genreList <- unique(unlist(strsplit(str_squish(unique(movies$genre) ),"," )))
+
+df_genre <- movies %>%
+  separate_rows(genre, sep = ",\\s*") %>%
+  mutate(genre = str_squish(genre))
+```
+
+```{r}
+df_genre_sum <- df_genre %>%
+  group_by(genre) %>%
+  filter(n()>=0) %>%
+  summarise( counted = sum(n())) %>%
+  arrange(,counted)
+df_genre_sum
+
+# useless
+```
+
+
+```{r}
+ggplot(data = df_genre_sum,mapping = aes( x = reorder(genre,desc(counted)), y = counted ))+
+  geom_bar(stat = "identity") + 
+  labs( x = "Genre",
+        y = "Sum") +
+  annotate("text",8 , 24000, label = "Top Movie Genres", vjust = "top", hjust = "right")
+```
+
+```{r}
+df_genre %>%
+  select(genre,gross) %>%
+  group_by(genre) %>% 
+  summarise(SumGrossByGenre = sum(gross,na.rm=T),
+            counted = sum(n())) %>%
+  mutate(MeanGross = SumGrossByGenre/counted) %>%
+  #filter(MeanGrossByGenre >= 300000000) %>%
+  ggplot( mapping = aes( x = reorder(genre, desc(MeanGross)) , y = MeanGross)) + geom_bar(stat = "identity") + labs( x = "Genre")
+  
+  
+```
+
+```{r}
+Animation_df<-df_genre %>% 
+  select(title,genre,gross) %>%
+  filter(genre == "Animation") %>%
+  arrange(desc(gross))
+```
+
+```{r}
+BiggestGross_df<-df_genre %>% 
+  select(title,genre,gross) %>%
+  arrange(desc(gross))
+```
+
+```{r}
+df_genre %>%
+  group_by(genre) %>%
+  ggplot(, aes( x = year , y = gross, color = genre)) + 
+  geom_point(aes(x = year , y = gross , color = genre)) +
+  #geom_smooth(aes(color = genre))
+  facet_grid(~genre)
+
+```
+
+
+
+
+
+```{r}
+df_directors <- movies %>%
+  separate_rows(directors, sep = ",\\s*") %>%
+  mutate(directors = str_squish(directors)) %>%
+  filter(votes >= 900000 & rating >= 7.7 & gross >= 10000000)
+```
+
+```{r}
+df_directors %>%
+  separate_rows(genre, sep = ",\\s*") %>%
+  mutate(genre = str_squish(genre)) %>%
+  select(directors,gross,genre) %>%
+  group_by(directors,genre) %>%
+  ggplot(,aes( x = directors, y= gross)) +
+  geom_bar(aes( x = directors, fill = genre))
+```
