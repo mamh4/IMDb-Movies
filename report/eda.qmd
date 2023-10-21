@@ -224,7 +224,7 @@ To conduct this comparison we standardised the Meta score ratings (From 0-100 to
 
 
 ### Estimated Number of Tickets Sold
-```{r}
+```{r estimated-nr-tickets-analysis}
 # Add the proportion of movies that have gross values
 movies |> distinct(title, year,run_time, .keep_all = TRUE) |>
   group_by(year) |>
@@ -235,7 +235,7 @@ movies |> distinct(title, year,run_time, .keep_all = TRUE) |>
   scale_y_continuous(breaks = seq(0,1.5e9,25e7),labels = scales::comma) +
   labs(y="Estimated Total Tickets Sold", 
        title = "Estimated Total Tickets Sold Trends Upawards Over Time",
-       subtitle = "Perturbations during WWII (1936-1945) analysed earlier can be attributed to the titles\nSnow White and the Seven Dwarfs (1937), Pinocchio and Fantasia (1940), Bambi(1942).\nDrop around Covid-19 (2020-2022)")+
+       subtitle = "Perturbations during WWII (1936-1945) analysed earlier can be attributed to the titles\nSnow White and the Seven Dwarfs (1937), Pinocchio and Fantasia\n(1940), Bambi(1942). Drop around Covid-19 (2020-2022)")+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
@@ -245,7 +245,7 @@ This plot shows a very similar pattern to CPI Adjusted Gross we've witnessed ear
 
 ## Market Share Analysis (Movies and the Entertainment Industry)
 
-```{r}
+```{r market-share-analysis}
 movies |> distinct(title, year,run_time,population, .keep_all = TRUE) |>
   group_by(year,population) |>
   reframe(mean_tickets_sold = mean(nr_tickets_sold,na.rm=T)) |>
@@ -257,8 +257,8 @@ movies |> distinct(title, year,run_time,population, .keep_all = TRUE) |>
   scale_x_continuous(breaks = seq(1915,2025,6)) +
   scale_y_continuous(labels = scales::comma) +
   labs(y="Estimated Number Of Views\nTotal Population", 
-       title = "Estimated Total Tickets Sold Trends Upawards Over Time",
-       subtitle = "Perturbations during WWII (1936-1945) analysed earlier can be attributed to the titles\nSnow White and the Seven Dwarfs (1937), Pinocchio and Fantasia (1940), Bambi(1942).\nDrop around Covid-19 (2020-2022)")+
+       title = "Estimated Number of Views Have Been Largly Stable Over Time",
+       subtitle = "Perturbations during WWII (1936-1945) analysed earlier can be attributed to the titles\nSnow White and the Seven Dwarfs (1937), Pinocchio and Fantasia\n(1940), Bambi(1942). Drop around Covid-19 (2020-2022)")+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
