@@ -1,21 +1,26 @@
-# Data
-
-```{r, echo = FALSE, message = FALSE}
+```{r libraries, echo = FALSE, message = FALSE}
 source(here::here("scripts/setup.R"))
 #libraries
 library(ggplot2)
+library(scales) # for comma separators
 library(patchwork)
 library(dplyr)
 library("mgcv") # to predict population between census years
 ```
 
-* Sources
-* Description
-Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables. (highlight that the gross amounts are only from US and not from all over)
+# Data
+
+IMDb has been around since 1990 and has a long history of collecting movie ratings and reviews. Over the years, it has built a substantial database of user-contributed content. IMDb makes its rating and review system transparent. Users can see how many people have rated a movie and read individual reviews. This openness adds to its credibility. 
+
+To address our research inquiry, we gathered information from IMDb, specifically from the following URL: https://www.imdb.com/search/title/?title_type=feature&num_votes=0,&sort=user_rating,desc&ref_=adv_prv. Subsequently, we enhanced this data set by incorporating data from Wikipedia, the U.S. Bureau of Labor, and the U.S. Census Bureau. We offer a comprehensive presentation of the amalgamated data set below.
+
+TODO: Tables (incl. footnote on gross amount being only US)
+
+As of October 21, 2023, the data set on featured movies comprises a total of 247,739 movie titles. These films have been rated by IMDb users who have registered on the platform. The count of ratings within this data set ranges from just a handful up to millions (<3 million).
 
 
-Talk about the large data set and show that it's awful and that we need to pick a cut-off point, we decide the cut-off point based on rating and not meta score or gross as the rating values as feel like it's more robust?
-```{r}
+
+```{r cut-off-decision}
 # Scrape movies
 source("../scripts/scrapping_functions/scrape_movies.R")
 #movies <- scrape_movies (n = 10,min_number_votes = 1e4,print_progress =TRUE)
@@ -31,11 +36,11 @@ a <- movies |>
   group_by(bin) |>
   summarise(avg_rating = mean(rating,na.rm = T)) |>
   ggplot(aes(x=bin,y=avg_rating))+
-  labs(title = "A logarithmic trend can be observed after excluding movies with less than 10k votes"
+  labs(title = "A logarithmic trend can be observed after excluding movies\nwith less than 10k votes"
        ,x="Number of Votes", y = "Average Rating") +
   geom_point()+
   geom_smooth()+
-  scale_x_continuous(breaks = seq(0,3e6,600000))+
+  scale_x_continuous(breaks = seq(0,3e6,600000),labels = scales::comma )+
   scale_y_continuous(limits = c(0,10),breaks = seq(0,10,2))+
   theme_minimal()
 
@@ -58,6 +63,9 @@ b <- movies |>
   coord_cartesian(xlim = c(0, 180000))+
   scale_y_continuous(limits = c(0,10),breaks = seq(0,10,2))+
   geom_vline(xintercept = 10000,linetype = "dashed")+
+  scale_x_continuous(labels = scales::comma)+
+  annotate("text", x = 10000, y = 10, vjust = "top", hjust = "left",
+           label = "10k")+
   theme_minimal()
   
 (a | b)
@@ -83,7 +91,7 @@ Thanks to the US Bureau of Labor for making CPI data available. https://www.bls.
 Rather scrapping, wrangling and cleaning
 
 
-```{r, echo = FALSE, message = FALSE}
+```{r data-enrichment, echo = FALSE, message = FALSE}
 # Read other data
 
 movies <- movies |>
@@ -154,17 +162,18 @@ movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pict
 ```
 
 
-Motivation for inflation and population
-```{r}
+## Motivation for cpi and population
+```{r motivation-cpi-population}
 a <- ggplot(population_estimates, aes(year, population)) +
   geom_line() +
-  labs(title = "Population Trends Over Time", x = "Census Year", y = "Population") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Population and CPI Trend Upwards Over Time", x = "Year", y = "Population") +
   theme_minimal()
 
 
 b <- ggplot(CPI,aes(Year, CPI))+
   geom_line()+
-  labs(title = "CPI Trends Over Time", x = "Year", y = "CPI") +
+  labs(x = "Year", y = "CPI") +
   theme_minimal()
 
 (a | b)
@@ -179,8 +188,11 @@ b <- ggplot(CPI,aes(Year, CPI))+
 - Ticket sold estimate (current ticket price?)
 
 
+## Motivation for data transformation
+To relate our research question as close as possible to the data set we have we construct a few estimates, For instance to answer to question How many views a movie received we can approximate it by number of tickets sold and proportion of population who watched the movie.
 
-```{r}
+Furthermore, we notice discrepancy in the certificate column for instance PG meant that viewers of the age of XX could watch the movie with their parents, but in 19XX this changed to XX of age. Therefore we assign the column factor levels that are age dependent.
+```{r transformation-chunk}
 #integrate transformations of columns into data set.
 todays_CPI <- CPI[CPI$Year==2023,"CPI"]
 movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
@@ -188,22 +200,18 @@ movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
 movies$ticket_price_23 <- 11.15
 movies$nr_tickets_sold <- movies$gross_CPI_adjusted / movies$ticket_price_23
 
+
 movies |> distinct(title, year, .keep_all = TRUE) |>
   group_by(year) |>
   summarise(total_tickets_sold = sum(nr_tickets_sold,na.rm=T)) |>
   ggplot(aes(year,total_tickets_sold)) +
   geom_line() +
   scale_x_continuous(breaks = seq(1915,2025,6)) +
+  scale_y_continuous(breaks = seq(0,1.5e9,25e7),labels = scales::comma) +
+  labs(y="Estimated Total Tickets Sold", 
+       title = "Estimated Total Tickets Sold Trends Upawards Over Time",
+       subtitle = "Perturbations during WWII (1936-1945) and Covid-19 (2020-2022)")+
   theme_minimal()
 
 ```
-
-
-## Motivation for using inflation and population data
-```{r}
-
-
-
-```
-
 
