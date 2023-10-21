@@ -154,6 +154,23 @@ movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pict
 ```
 
 
+Motivation for inflation and population
+```{r}
+a <- ggplot(population_estimates, aes(year, population)) +
+  geom_line() +
+  labs(title = "Population Trends Over Time", x = "Census Year", y = "Population") +
+  theme_minimal()
+
+
+b <- ggplot(CPI,aes(Year, CPI))+
+  geom_line()+
+  labs(title = "CPI Trends Over Time", x = "Year", y = "CPI") +
+  theme_minimal()
+
+(a | b)
+
+```
+
 
 * (new) Data Transformations
 - certificate->age dependent
@@ -168,8 +185,25 @@ movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pict
 todays_CPI <- CPI[CPI$Year==2023,"CPI"]
 movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
 movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
+movies$ticket_price_23 <- 11.15
+movies$nr_tickets_sold <- movies$gross_CPI_adjusted / movies$ticket_price_23
+
+movies |> distinct(title, year, .keep_all = TRUE) |>
+  group_by(year) |>
+  summarise(total_tickets_sold = sum(nr_tickets_sold,na.rm=T)) |>
+  ggplot(aes(year,total_tickets_sold)) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(1915,2025,6)) +
+  theme_minimal()
+
+```
+
+
+## Motivation for using inflation and population data
+```{r}
 
 
 
 ```
+
 
