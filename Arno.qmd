@@ -21,23 +21,24 @@ library(stringr)
 ```
 
 ```{r}
-load("data/full_movies_v1.RData")
+#load("data/full_movies_v1.RData")
+#load("data/cleaned_data/full_IMDb_Scrape.RData")
 ```
 
 ```{r}
-#test <-movies %>% select(title,year,certificate) %>% filter(year <= 1970 & certificate == "R" | certificate == "X")
+#test <-movies |> select(title,year,certificate) |> filter(year <= 1970 & certificate == "R" | certificate == "X")
 ```
 
 ```{r}
-#df_cert_clean <- movies %>% 
-#  mutate(certificate = sub("[\\\n].*",NA, certificate)) %>% 
-#  select(certificate) %>% 
-#  group_by(certificate) %>% 
+#df_cert_clean <- movies |> 
+#  mutate(certificate = sub("[\\\n].*",NA, certificate)) |> 
+#  select(certificate) |> 
+#  group_by(certificate) |> 
 #  summarise(count = n())
 ```
 
 ```{}
-data_clean_certofgenre_v2 <- movies %>% 
+data_clean_certofgenre_v2 <- movies |> 
   mutate(certificate = ifelse(certificate == "\nAction            ", NA, certificate), 
         certificate = ifelse(certificate == "\nAction, Comedy, Crime            ", NA, certificate),
         certificate = ifelse(certificate == "\nAction, Comedy, Thriller            ", NA, certificate),
@@ -49,14 +50,14 @@ data_clean_certofgenre_v2 <- movies %>%
         certificate = ifelse(certificate == "\nAction, Thriller            ", NA, certificate),
         certificate = ifelse(certificate == "\nAdventure            ", NA, certificate))
 
-ddd <- data_clean_certofgenre %>% select(certificate) %>% group_by(certificate) %>% summarise(count = n()) 
+ddd <- data_clean_certofgenre |> select(certificate) |> group_by(certificate) |> summarise(count = n()) 
   
 ```
 
 ```{r message=TRUE}
-movies <- movies %>% 
-  mutate(certificate = sub("[\\\n].*",NA, certificate)) %>% 
-  mutate(certificate = as.factor(str_squish(certificate))) %>%
+movies <- movies |> 
+  mutate(certificate = sub("[\\\n].*",NA, certificate)) |> 
+  mutate(certificate = as.factor(str_squish(certificate))) |>
   mutate(certificate = fct_recode(certificate, 
                                   "0" = "Approved",
                                   "0" = "G",
@@ -113,133 +114,256 @@ certificate_to_age <- function(cert, year){
 ```
 
 ```{r message=TRUE}
-movies <- movies %>%
+movies <- movies |>
   mutate(certificate = certificate_to_age(certificate,year) ) 
 
-#cert_df <- movies %>% select(certificate) %>% group_by(certificate) %>% summarise(count = n()) 
+#cert_df <- movies |> select(certificate) |> group_by(certificate) |> summarise(count = n()) 
 ```
 
 
 
 
-
-```{r}
-movies %>% 
-  group_by(year) %>%
+## Data Explo Section + Analysis on Competition in recent times #####################################################
+```{r Competition Inc}
+movies |> 
+  group_by(year) |>
   ggplot(mapping = aes(x = year, y = )) + geom_bar()
 
 ```
 
-more competition now than a few years back
+## Genre section #####################################################
+```{r Genre DF}
 
-```{r}
-attention_span_df <- movies %>% mutate(bins = run_time %/% 90 )
-
-ggplot(data = data_1 , mapping = aes( x = run_time , y = gross/100000, color = year )) +
-  #scale_y_continuous(breaks = seq(0, 600000, by = 50000)) +
-  geom_point() 
-```
-```{r}
-attention_span_df %>% 
-  select(bins,run_time,year,gross,votes) %>%
-  group_by(bins,year) %>%
-  summarise(avggross = mean(gross,na.rm = T),
-            avgvotes = mean(votes)) %>%
-  ggplot( aes(x = year , y = avgvotes, color = factor(bins))) +
-  geom_point(aes(color = factor(bins))) +
-  geom_line(aes(color = factor(bins)))+
-  #geom_smooth(aes(x= year, y = avggross))
-  facet_grid(~bins)
-  
-```
-
-
-```{r}
-data_2 <- movies %>%
-  group_by(genre) %>%
-  filter(n()>=100)
-```
-
-```{r}
-genreList <- unique(unlist(strsplit(str_squish(unique(movies$genre) ),"," )))
-
-df_genre <- movies %>%
-  separate_rows(genre, sep = ",\\s*") %>%
+movies_genre_extended <- movies |>
+  separate_rows(genre, sep = ",\\s*") |>
   mutate(genre = str_squish(genre))
+
+
+# genreList <- unique(unlist(strsplit(str_squish(unique(movies$genre) ),"," ))) # to have an idea of the genres in the dataset
 ```
 
 ```{r}
-df_genre_sum <- df_genre %>%
-  group_by(genre) %>%
-  filter(n()>=0) %>%
-  summarise( counted = sum(n())) %>%
-  arrange(counted)
-df_genre_sum
-
-# useless
-```
-
-
-```{r}
-ggplot(data = df_genre_sum,mapping = aes( x = reorder(genre,desc(counted)), y = counted ))+
-  geom_bar(stat = "identity") + 
-  labs( x = "Genre",
-        y = "Sum") +
-  annotate("text",8 , 24000, label = "Top Movie Genres", vjust = "top", hjust = "right")
-```
-```{r}
-df_genre %>%
-  select(genre,gross) %>%
-  group_by(genre) %>% 
-  summarise(SumGrossByGenre = sum(gross,na.rm=T),
-            counted = sum(n())) %>%
-  mutate(MeanGross = SumGrossByGenre/counted) %>%
-  #filter(MeanGrossByGenre >= 300000000) %>%
-  ggplot( mapping = aes( x = reorder(genre, desc(MeanGross)) , y = MeanGross)) + geom_bar(stat = "identity") + labs( x = "Genre")
+# 
+# df_genre_sum <- movies_genre_extended |>
+#   group_by(genre) |>
+#   filter(n()>=0) |>
+#   summarise( counted = sum(n())) |>
+#   arrange(counted)
+#
+#ggplot(data = df_genre_sum,mapping = aes( x = reorder(genre,desc(counted)), y = counted ))+
+#  geom_bar(stat = "identity") +
+#  labs( x = "Genre",
+#        y = "Sum") +
+#  annotate("text",8 , 130000, label = "Top Movie Genres", vjust = "top", hjust = "right")
+#
+# movies_genre_extended |>
+#   select(genre,gross) |>
+#   group_by(genre) |>
+#   summarise(SumGrossByGenre = sum(gross,na.rm=T),
+#             counted = sum(n())) |>
+#   mutate(MeanGross = SumGrossByGenre/counted) |>
+#   #filter(MeanGrossByGenre >= 300000000) |>
+#   ggplot( mapping = aes( x = reorder(genre, desc(MeanGross)) , y = MeanGross)) + geom_bar(stat = "identity") + labs( x = "Genre")
   
   
 ```
 
-```{r}
-Animation_df<-df_genre %>% 
-  select(title,genre,gross) %>%
-  filter(genre == "Animation") %>%
-  arrange(desc(gross))
-```
+## Genre Analysis Section #####################################################
 
-```{r}
-BiggestGross_df<-df_genre %>% 
-  select(title,genre,gross) %>%
-  arrange(desc(gross))
-```
-
-```{r}
-df_genre %>%
-  group_by(genre) %>%
-  ggplot(, aes( x = year , y = gross, color = genre)) + 
-  geom_point(aes(x = year , y = gross , color = genre)) +
-  #geom_smooth(aes(color = genre))
-  facet_grid(~genre)
+```{r Analysis : Genre}
+movies_genre_extended |>
+  filter(genre != "Adult" & genre != "News" & genre != "Reality-TV" & genre != "Talk-Show") |>
+  group_by(genre,year) |>
+  summarise(avggross = mean(gross,na.rm = T)) |>
+  ggplot(aes( x = year, y = avggross)) + # maybe it is better to plot by avg gross instead of only gross
+    geom_point(aes( color = genre)) +
+    geom_smooth() +
+    theme(axis.ticks.x = element_blank(),
+          axis.text.x=element_blank()) +
+    facet_grid(~genre) +
+    labs(title = "It seems that Action, Adventure, Fantasy & Sci-Fi, hold the best Gross result in modern times",
+         subtitle = "On the other hand genres like War, Wester & Sport faced a decline in recent years", 
+         x = "Year for each genre (1920-2023)",
+         y = "Average gross by year")
 
 ```
 
 
+```{r Analysis : Genre bis}
+movies_genre_extended |>
+  filter(genre != "Adult" & genre != "News" & genre != "Reality-TV" & genre != "Talk-Show") |>
+  group_by(genre,year) |>
+  ggplot(aes( x = year, y = gross)) + 
+    geom_point(aes( color = genre)) +
+    geom_smooth() +
+    theme(axis.ticks.x = element_blank(),
+          axis.text.x=element_blank()) +
+    facet_grid(~genre) +
+    labs(title = "It seems that Action, Adventure, Fantasy & Sci-Fi, hold the best Gross result in modern times",
+         subtitle = "On the other hand genres like War, History, Music & Sport seem to have stagnated", 
+         x = "Year for each genre (1920-2023)",
+         y = "Average gross by year")
+
+```
+
+
+## Attention Span Section ##########################################################################################
+
+```{r}
+A_span <- movies |> 
+  filter(run_time >0 ) |>
+  mutate(Runtime_bins = run_time %/% 60) |>
+  group_by(Runtime_bins) |>
+  summarise(count = n())
+```
+
+```{r}
+Runtime_Lenght_df <- movies |> 
+  filter(run_time >0) |>
+  mutate(Runtime_bins = as.factor(run_time %/% 60)) |>
+  mutate(Runtime_bins = fct_recode(Runtime_bins,
+                                   "Very Short" = "0", # less than 60 min
+                                   "Short" = "1",      # 60 min more or less
+                                   "Average" = "2",    # up to 2h (120min)
+                                   "Long" = "3",       # up to 3h (120-180min)
+                                   "Very Long" = "4",  # up to 4h and more are categorised as "very long" movies
+                                   "Very Long" = "5",
+                                   "Very Long" = "6",
+                                   "Very Long" = "7",
+                                   "Very Long" = "8",
+                                   "Very Long" = "9",
+                                   "Very Long" = "10",
+                                   "Very Long" = "11",
+                                   "Very Long" = "12",
+                                   "Very Long" = "13",
+                                   "Very Long" = "14",
+                                   "Very Long" = "15",
+                                   "Very Long" = "16"))
+```
+
+
+```{r}
+Runtime_Lenght_df |>
+  select(Runtime_bins,year,rating) |>
+  group_by(Runtime_bins,year) |>
+  summarise( Bin_count = n(),
+             AVG_rating = mean(rating, na.rm = T)) |>
+  ggplot(aes( x = year , y = AVG_rating)) +
+  geom_point(aes(shape = Runtime_bins, color = Runtime_bins))+
+  geom_smooth(aes(color = Runtime_bins), se =TRUE) +
+  labs(title = "Short & average lenght films seem to have an uptick in ratings",
+       subtitle = "Although long movies seem to generate better ratings in recent years, one must bear in mind that they have the largest standard deviation among the other categories",
+       x = "Year",
+       y = "Average Rating",
+       color = "Runtime Bins",
+       shape = "Runtime Bins") +
+  coord_cartesian(xlim = c(1918,2025))
+
+```
+```{r}
+Runtime_Lenght_df |>
+  select(Runtime_bins,year,gross) |>
+  group_by(Runtime_bins,year) |>
+  summarise( Bin_count = n(),
+             AVG_gross = mean(gross, na.rm = T)) |>
+  filter(AVG_gross>=0) |>
+  ggplot(aes( x = year , y = AVG_gross)) +
+  geom_point(aes(shape = Runtime_bins, color = Runtime_bins))+
+  geom_smooth(aes(color = Runtime_bins), se =FALSE) +
+  labs(title = "Short & average lenght films have slight increase in gross each year",
+       subtitle = "Long movies have the most potential, but it is either a hit or a miss",
+       x = "Year",
+       y = "Average Gross",
+       color = "Runtime Bins",
+       shape = "Runtime Bins") +
+  coord_cartesian(xlim = c(1950,2025), ylim = c(-10,2.5e+08))
+```
+
+Seem that when the movie is too short, individuals tend to think that it might not be worth the money to go to the cinema.
+
 
 
 
 ```{r}
-df_directors <- movies %>%
-  separate_rows(directors, sep = ",\\s*") %>%
-  mutate(directors = str_squish(directors)) %>%
+ggplot(data = Runtime_Lenght_df , mapping = aes( x = Runtime_bins , y = gross, color = year )) +
+  geom_point()
+```
+
+
+```{r}
+Runtime_Lenght_df |> 
+  select(Runtime_bins,year,gross,votes) |>
+  group_by(Runtime_bins,year) |>
+  summarise(avggross = mean(gross,na.rm = T),
+            avgvotes = mean(votes)) |>
+  ggplot(aes(x = year , y = avgvotes)) +
+  geom_point() + geom_smooth() +
+  facet_grid(~Runtime_bins)
+  
+```
+seem that the average number of votes are in decline, in recent years. Maybe by the fact that only dedicated viewers create accounts on IMDB to rate movies.
+
+```{r}
+Runtime_Lenght_df_100_180min <- movies |> 
+  filter(run_time >100 & run_time <= 180) |>
+  mutate(Runtime_bins = as.factor((run_time-100) %/% 30)) |>
+  mutate(Runtime_bins = fct_recode(Runtime_bins,
+                                   "100-130" = "0", # less than 60 min
+                                   "130-160" = "1",      # 60 min more or less
+                                   "160-180" = "2",    # up to 2h (120min)
+                                  )) 
+Runtime_Lenght_df_100_180min |>
+  select(Runtime_bins,year,gross) |>
+  group_by(Runtime_bins,year) |>
+  summarise( Bin_count = n(),
+             AVG_gross = mean(gross, na.rm = T)) |>
+  filter(AVG_gross>=0) |>
+  ggplot(aes( x = year , y = AVG_gross)) +
+  geom_point(aes(shape = Runtime_bins, color = Runtime_bins))+
+  geom_smooth(aes(color = Runtime_bins), se =FALSE) +
+  labs(title = "Taking a closer look on movies with lenght 100-180min",
+       subtitle = "Safe bet would be arround 130min, it has the lowest standard error",
+       x = "Year",
+       y = "Average Gross",
+       color = "Runtime Bins",
+       shape = "Runtime Bins") +
+  annotate("text",x = 1970, y = 2.2e+08, vjust = "top", hjust = "center", label = "Correlation between lenght & gross volatility
+           seem to play a role for movies" )
+  coord_cartesian(xlim = c(1950,2025), ylim = c(-10,2.5e+08))
+
+```
+
+
+
+
+## Certificate Section #####################################################
+
+certificate / genre / gross ?? For which cert is the most appropriate gross wise / rating wise / ...
+```{r}
+movies_genre_extended |> 
+  select(certificate,genre,gross,rating,votes) |>
+  filter(votes >= 2000) |>
+  group_by(certificate,genre) |>
+  summarise(sum_gross = sum(gross,na.rm = T)) |>
+  ggplot(aes( x = genre , y = sum_gross)) + 
+  geom_point(aes(color = certificate)) + geom_boxplot()
+  
+```
+#### X Section 
+
+```{r}
+df_directors <- movies |>
+  separate_rows(directors, sep = ",\\s*") |>
+  mutate(directors = str_squish(directors)) |>
   filter(votes >= 900000 & rating >= 7.7 & gross >= 10000000)
 ```
 
 ```{r}
-df_directors %>%
-  separate_rows(genre, sep = ",\\s*") %>%
-  mutate(genre = str_squish(genre)) %>%
-  select(directors,gross,genre) %>%
-  group_by(directors,genre) %>%
+df_directors |>
+  separate_rows(genre, sep = ",\\s*") |>
+  mutate(genre = str_squish(genre)) |>
+  select(directors,gross,genre) |>
+  group_by(directors,genre) |>
   ggplot(aes( x = directors, y= gross)) +
   geom_bar(aes( x = directors, fill = genre))
 ```
