@@ -6,6 +6,7 @@ source(here::here("scripts/setup.R"))
 library(ggplot2)
 library(patchwork)
 library(dplyr)
+library("mgcv") # to predict population between census years
 ```
 
 * Sources
@@ -122,6 +123,14 @@ CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
     select(Year,CPI) %>%
     rbind(data.frame(Year = 2023,CPI = 302.340)) #US Federal Reserve Economic Data
 
+# integrate population data
+population <- read.csv("../data/cleaned_data/population.csv")
+population_gam <- gam(population~s(census_year),data = population)
+plot(population_gam)
+predictions <- predict(object = population_gam, newdata = data.frame(census_year = seq(1900, 2023, 1)))
+population_estimates <- data.frame(year = seq(1900, 2023, 1),
+                                   population = predictions)
+
 
 #aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
 #Warning is due two films "Beast 2022" when doing a left join, we adjust them afterwards.
@@ -134,7 +143,8 @@ movies <- movies |>
   separate_rows(directors, sep = ",\\s*") |>
   left_join(dob_table_directors,join_by(directors)) |>
   separate_rows(genre, sep = ",\\s*") |>
-  separate_rows(studio, sep = ",\\s*")
+  separate_rows(studio, sep = ",\\s*") |>
+  left_join(population_estimates, join_by(year))
 })
 
 # There are two movies named beast from the year 2022.
@@ -154,11 +164,10 @@ movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pict
 
 
 ```{r}
-#load inflation data + other relevant data sets to make new columns
+#integrate transformations of columns into data set.
 todays_CPI <- CPI[CPI$Year==2023,"CPI"]
 movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
 movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
-
 
 
 
