@@ -6,19 +6,18 @@ library(scales) # for comma separators
 library(patchwork)
 library(dplyr)
 library(mgcv) # to predict population between census years
+library(magrittr) #for the dot operator
 ```
 
 # Data
 
 IMDb has been around since 1990 and has a long history of collecting movie ratings and reviews. Over the years, it has built a substantial database of user-contributed content. IMDb makes its rating and review system transparent. Users can see how many people have rated a movie and read individual reviews. This openness adds to its credibility. 
 
-To address our research inquiry, we gathered information from IMDb, specifically from the following URL: https://www.imdb.com/search/title/?title_type=feature&num_votes=0,&sort=user_rating,desc&ref_=adv_prv. Subsequently, we enhanced this data set by incorporating data from Wikipedia, the U.S. Bureau of Labor, and the U.S. Census Bureau. We offer a comprehensive presentation of the amalgamated data set below.
+To address our research inquiry, we gathered information from IMDb, specifically from the following [webpage](https://www.imdb.com/search/title/?title_type=feature&num_votes=0,&sort=user_rating,desc&ref_=adv_prv). Subsequently, we enhanced this data set by incorporating data from Wikipedia, the U.S. Bureau of Labor, and the U.S. Census Bureau. We offer a comprehensive presentation of the amalgamated data set below.
 
 TODO: Tables (incl. footnote on gross amount being only US)
 
 As of October 21, 2023, the data set on featured movies comprises a total of 247,739 movie titles. These films have been rated by IMDb users who have registered on the platform. The count of ratings within this data set ranges from just a handful up to millions (<3 million).
-
-
 
 ```{r cut-off-decision}
 # Scrape movies
@@ -75,21 +74,7 @@ b <- movies |>
 Conclusion: cut-off at 10k
 
 
-Now that we decided on the cut-off of 10k we end up with XXX movie titles which we try to enrich with information such as the date of births of actors and directors the studio(s) that produced the film and the budget. Since we have movies dating back from 1900s we decided to include the average annual consumer price index. 
-
-inflation source:
-The Consumer Price Index (CPI) is a measure of the average change over time in the prices paid by urban consumers for a market basket of consumer goods and services. It is an accurate representation of inflation changes over the years.
-
-Content
-This dataset contains monthly CPI indexes from 1913 to 2022 (April). May through December 2022 information is not available, but I will update that as soon as it comes out.
-
-Acknowledgement
-Thanks to the US Bureau of Labor for making CPI data available. https://www.bls.gov/cpi/
-
-
-
-* Wrangling/cleaning
-Rather scrapping, wrangling and cleaning
+Now that we decided on the cut-off of 10k we end up with 10,555 movie titles which we try to enrich with information such as the date of births of actors and directors the studio(s) that produced the film and the budget. Since we have movies dating back from 1900s we decided to include the average annual consumer price index and population estimates.
 
 
 ```{r data-enrichment, echo = FALSE, message = FALSE}
@@ -145,7 +130,7 @@ population_estimates <- data.frame(year = seq(1900, 2023, 1),
 suppressWarnings({
 movies <- movies |> 
   left_join(CPI,join_by(year==Year)) |>
-  left_join(studio_and_budget, join_by(title,year)) |>
+  left_join(studio_and_budget[1:4], join_by(title,year)) |>
   separate_rows(stars, sep = ",\\s*") |>
   left_join(dob_table_stars,join_by(stars)) |>
   separate_rows(directors, sep = ",\\s*") |>
@@ -199,19 +184,6 @@ movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
 movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
 ticket_price_23 <- 11.15
 movies$nr_tickets_sold <- movies$gross_CPI_adjusted / ticket_price_23
-
-
-movies |> distinct(title, year, .keep_all = TRUE) |>
-  group_by(year) |>
-  summarise(total_tickets_sold = sum(nr_tickets_sold,na.rm=T)) |>
-  ggplot(aes(year,total_tickets_sold)) +
-  geom_line() +
-  scale_x_continuous(breaks = seq(1915,2025,6)) +
-  scale_y_continuous(breaks = seq(0,1.5e9,25e7),labels = scales::comma) +
-  labs(y="Estimated Total Tickets Sold", 
-       title = "Estimated Total Tickets Sold Trends Upawards Over Time",
-       subtitle = "Perturbations during WWII (1936-1945) and Covid-19 (2020-2022)")+
-  theme_minimal()
 
 ```
 
