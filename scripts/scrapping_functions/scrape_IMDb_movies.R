@@ -2,13 +2,13 @@
 library(rvest)
 library(dplyr)
 library(stringr)
-library(xml2)
-library(XML)
-library("readr")
-library(ggplot2)
-library(patchwork)
+#library(xml2)
+#library(XML)
+#library("readr")
+#library(ggplot2)
+#library(patchwork)
 library(tidyr)
-library(zoo)
+#library(zoo)
 
 scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_progress = FALSE, return_next_url = FALSE, start_url = 'empty'){
   

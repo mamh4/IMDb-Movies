@@ -1,5 +1,14 @@
-- Transform the certificate column into ages. - Arno
-- Ticket Price estimate
-- Population data gathering
-- EDA part including share, analysis of NAs saying if something weird etc.
-- Analysis part; Genre, Run time, Actor, ....
+- Intro
+- scarping function prints + saving + not reading the function the function in script -Pierre
+- EDA part including share, analysis of NAs saying if something weird etc. -Mohamed
+- Analysis:
+-- Genre - Arno
+-- Run-time - Arno
+-- Budget - Pierre
+-- Certifacte (Horror, Thriller, Action) - Arno 
+-- Studio - Mohamed
+-- Director - Mohamed/Pierre/Arno
+-- Actor - Mohamed/Pierre/Arno
+
+- Presentation Slides
+- Dashboard

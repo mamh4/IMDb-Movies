@@ -5,7 +5,7 @@ library(ggplot2)
 library(scales) # for comma separators
 library(patchwork)
 library(dplyr)
-library("mgcv") # to predict population between census years
+library(mgcv) # to predict population between census years
 ```
 
 # Data
@@ -22,12 +22,13 @@ As of October 21, 2023, the data set on featured movies comprises a total of 247
 
 ```{r cut-off-decision}
 # Scrape movies
-source("../scripts/scrapping_functions/scrape_movies.R")
-#movies <- scrape_movies (n = 10,min_number_votes = 1e4,print_progress =TRUE)
+#source("../scripts/scrapping_functions/scrape_IMDb_movies.R")
+#movies <- scrape_movies(n_start=1, n_end=10,min_number_votes = 10000, print_progress = FALSE, return_next_url = FALSE, start_url = 'empty')
 load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
 
-# set NA number of votes to 0
-movies[is.na(movies$votes),"votes"] <- 0
+# set NA number of votes to 0 (Two movies with NA votes from IMDb featured page, however <50 votes on IMDb movie page)
+movies[is.na(movies$votes) & movies$title == "Ein Fest fürs Leben","votes"] <- 9
+movies[is.na(movies$votes) & movies$title == "Building Heaven, Remembering Earth","votes"] <- 16
 
 #Pick a cut-off point
 a <- movies |>
@@ -134,7 +135,6 @@ CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
 # integrate population data
 population <- read.csv("../data/cleaned_data/population.csv")
 population_gam <- gam(population~s(census_year),data = population)
-plot(population_gam)
 predictions <- predict(object = population_gam, newdata = data.frame(census_year = seq(1900, 2023, 1)))
 population_estimates <- data.frame(year = seq(1900, 2023, 1),
                                    population = predictions)
@@ -197,8 +197,8 @@ Furthermore, we notice discrepancy in the certificate column for instance PG mea
 todays_CPI <- CPI[CPI$Year==2023,"CPI"]
 movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
 movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
-movies$ticket_price_23 <- 11.15
-movies$nr_tickets_sold <- movies$gross_CPI_adjusted / movies$ticket_price_23
+ticket_price_23 <- 11.15
+movies$nr_tickets_sold <- movies$gross_CPI_adjusted / ticket_price_23
 
 
 movies |> distinct(title, year, .keep_all = TRUE) |>
