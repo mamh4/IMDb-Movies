@@ -2,11 +2,16 @@
 
 ```{r, echo = FALSE, message = FALSE}
 source(here::here("scripts/setup.R"))
+#libraries
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+library("mgcv") # to predict population between census years
 ```
 
 * Sources
 * Description
-Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables.
+Here we include the table containing the data + mention how we can relate the the variable from the data set we have to the success and success  explanatory variables. (highlight that the gross amounts are only from US and not from all over)
 
 
 Talk about the large data set and show that it's awful and that we need to pick a cut-off point, we decide the cut-off point based on rating and not meta score or gross as the rating values as feel like it's more robust?
@@ -20,21 +25,48 @@ load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
 movies[is.na(movies$votes),"votes"] <- 0
 
 #Pick a cut-off point
-movies |>
+a <- movies |>
   mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
   select(bin,rating) |> 
   group_by(bin) |>
   summarise(avg_rating = mean(rating,na.rm = T)) |>
   ggplot(aes(x=bin,y=avg_rating))+
+  labs(title = "A logarithmic trend can be observed after excluding movies with less than 10k votes"
+       ,x="Number of Votes", y = "Average Rating") +
   geom_point()+
-  geom_smooth()
+  geom_smooth()+
+  scale_x_continuous(breaks = seq(0,3e6,600000))+
+  scale_y_continuous(limits = c(0,10),breaks = seq(0,10,2))+
+  theme_minimal()
+
+
+b <- movies |>
+  mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
+  select(bin,rating) |> 
+  group_by(bin) |>
+  summarise(avg_rating = mean(rating,na.rm = T)) |>
+  ggplot(aes(x=bin,y=avg_rating))+
+  labs(x="Number of Votes", y = "Average Rating") +
+  geom_point()+
+  geom_point(col="red",data = movies |>
+                              mutate(bin = (votes %/% 250+1)*250 ) |> #bin size of 250
+                              select(bin,rating) |> 
+                              group_by(bin) |>
+                              summarise(avg_rating = mean(rating,na.rm = T)) |>
+                              filter(bin<=10000))+
+  geom_smooth()+
+  coord_cartesian(xlim = c(0, 180000))+
+  scale_y_continuous(limits = c(0,10),breaks = seq(0,10,2))+
+  geom_vline(xintercept = 10000,linetype = "dashed")+
+  theme_minimal()
   
+(a | b)
 
 ```
-Conclusion: cut-off at 50k
+Conclusion: cut-off at 10k
 
 
-
+Now that we decided on the cut-off of 10k we end up with XXX movie titles which we try to enrich with information such as the date of births of actors and directors the studio(s) that produced the film and the budget. Since we have movies dating back from 1900s we decided to include the average annual consumer price index. 
 
 inflation source:
 The Consumer Price Index (CPI) is a measure of the average change over time in the prices paid by urban consumers for a market basket of consumer goods and services. It is an accurate representation of inflation changes over the years.
@@ -53,6 +85,10 @@ Rather scrapping, wrangling and cleaning
 
 ```{r, echo = FALSE, message = FALSE}
 # Read other data
+
+movies <- movies |>
+  filter(votes>=10000)
+
 
 # Source relevant scripts
 source("../scripts/scrapping_functions/enrich_dob.R")
@@ -81,18 +117,23 @@ load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_dir
 load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
 
-#source("clean_movies") TODO
-movies$genre <- str_squish(movies$genre) #will be done in scraping
-
-
 # Apparently the dot operator needs %>% not yet implemented in base r using |>
 CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
     mutate(CPI = rowMeans(.[,3:14],na.rm=T)) %>%
     select(Year,CPI) %>%
     rbind(data.frame(Year = 2023,CPI = 302.340)) #US Federal Reserve Economic Data
 
+# integrate population data
+population <- read.csv("../data/cleaned_data/population.csv")
+population_gam <- gam(population~s(census_year),data = population)
+plot(population_gam)
+predictions <- predict(object = population_gam, newdata = data.frame(census_year = seq(1900, 2023, 1)))
+population_estimates <- data.frame(year = seq(1900, 2023, 1),
+                                   population = predictions)
+
 
 #aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
+#Warning is due two films "Beast 2022" when doing a left join, we adjust them afterwards.
 suppressWarnings({
 movies <- movies |> 
   left_join(CPI,join_by(year==Year)) |>
@@ -102,13 +143,33 @@ movies <- movies |>
   separate_rows(directors, sep = ",\\s*") |>
   left_join(dob_table_directors,join_by(directors)) |>
   separate_rows(genre, sep = ",\\s*") |>
-  separate_rows(studio, sep = ",\\s*")
+  separate_rows(studio, sep = ",\\s*") |>
+  left_join(population_estimates, join_by(year))
 })
 
-# ToDo Beast 2022 fix the budget and studio for the right one
+# There are two movies named beast from the year 2022.
+movies[movies$title=="Beast" & movies$run_time ==93,"budget"] <- 36e6
+movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pictures"
 
 ```
 
+
+Motivation for inflation and population
+```{r}
+a <- ggplot(population_estimates, aes(year, population)) +
+  geom_line() +
+  labs(title = "Population Trends Over Time", x = "Census Year", y = "Population") +
+  theme_minimal()
+
+
+b <- ggplot(CPI,aes(Year, CPI))+
+  geom_line()+
+  labs(title = "CPI Trends Over Time", x = "Year", y = "CPI") +
+  theme_minimal()
+
+(a | b)
+
+```
 
 
 * (new) Data Transformations
@@ -120,9 +181,29 @@ movies <- movies |>
 
 
 ```{r}
-#load inflation data + other relevant data sets to make new columns
-movies$gross_inflation_adjusted <- "TODO"
+#integrate transformations of columns into data set.
+todays_CPI <- CPI[CPI$Year==2023,"CPI"]
+movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
+movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
+movies$ticket_price_23 <- 11.15
+movies$nr_tickets_sold <- movies$gross_CPI_adjusted / movies$ticket_price_23
+
+movies |> distinct(title, year, .keep_all = TRUE) |>
+  group_by(year) |>
+  summarise(total_tickets_sold = sum(nr_tickets_sold,na.rm=T)) |>
+  ggplot(aes(year,total_tickets_sold)) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(1915,2025,6)) +
+  theme_minimal()
+
+```
+
+
+## Motivation for using inflation and population data
+```{r}
+
 
 
 ```
+
 
