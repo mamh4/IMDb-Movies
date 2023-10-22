@@ -1,6 +1,7 @@
 - Intro
 - scarping function prints + saving + not reading the function the function in script -Pierre
 - EDA part including share, analysis of NAs saying if something weird etc. -Mohamed
+- Todo add certificate transformation.
 - Analysis:
 -- Genre - Arno
 -- Run-time - Arno

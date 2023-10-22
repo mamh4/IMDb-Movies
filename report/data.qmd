@@ -7,6 +7,7 @@ library(patchwork)
 library(dplyr)
 library(mgcv) # to predict population between census years
 library(magrittr) #for the dot operator
+library(lubridate)
 ```
 
 # Data
@@ -110,6 +111,10 @@ load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_dir
 #source("../scripts/cleaning_functions/clean_studio_budget.R")
 load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
+#source("../scripts/cleaning_functions/clean_dob.R")
+load("../data/cleaned_data/dob_stars10k_cleaned.Rdata")
+load("../data/cleaned_data/dob_directors10k_cleaned.Rdata")
+
 
 # Apparently the dot operator needs %>% not yet implemented in base r using |>
 CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
@@ -132,9 +137,9 @@ movies <- movies |>
   left_join(CPI,join_by(year==Year)) |>
   left_join(studio_and_budget[1:4], join_by(title,year)) |>
   separate_rows(stars, sep = ",\\s*") |>
-  left_join(dob_table_stars,join_by(stars)) |>
+  left_join(dob_table_stars_cleaned[1:2],join_by(stars)) |>
   separate_rows(directors, sep = ",\\s*") |>
-  left_join(dob_table_directors,join_by(directors)) |>
+  left_join(dob_table_directors_cleaned[1:2],join_by(directors)) |>
   separate_rows(genre, sep = ",\\s*") |>
   separate_rows(studio, sep = ",\\s*") |>
   left_join(population_estimates, join_by(year))
@@ -147,7 +152,7 @@ movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pict
 ```
 
 
-## Motivation for cpi and population
+## Motivation for CPI and population
 ```{r motivation-cpi-population}
 a <- ggplot(population_estimates, aes(year, population)) +
   geom_line() +
@@ -177,7 +182,7 @@ b <- ggplot(CPI,aes(Year, CPI))+
 To relate our research question as close as possible to the data set we have we construct a few estimates, For instance to answer to question How many views a movie received we can approximate it by number of tickets sold and proportion of population who watched the movie.
 
 Furthermore, we notice discrepancy in the certificate column for instance PG meant that viewers of the age of XX could watch the movie with their parents, but in 19XX this changed to XX of age. Therefore we assign the column factor levels that are age dependent.
-```{r transformation-chunk}
+```{r transformation-chunk, echo = FALSE, message = FALSE}
 #integrate transformations of columns into data set.
 todays_CPI <- CPI[CPI$Year==2023,"CPI"]
 movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
