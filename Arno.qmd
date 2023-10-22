@@ -22,7 +22,7 @@ library(stringr)
 
 ```{r}
 #load("data/full_movies_v1.RData")
-#load("data/cleaned_data/full_IMDb_Scrape.RData")
+load("data/cleaned_data/full_IMDb_Scrape.RData")
 ```
 
 ```{r}
@@ -64,6 +64,7 @@ movies <- movies |>
                                   "0" = "GP",
                                   "0" = "M",
                                   "0" = "M/PG",
+                                  "6" = "6",
                                   "18" = "NC-17", 
                                   NULL = "Not Rated",
                                   "0" = "PG",
@@ -115,7 +116,12 @@ certificate_to_age <- function(cert, year){
 
 ```{r message=TRUE}
 movies <- movies |>
-  mutate(certificate = certificate_to_age(certificate,year) ) 
+  mutate(certificate = certificate_to_age(certificate,year)) 
+
+movies$certificate <- factor( movies$certificate, 
+                              levels = c("0", "6", "7", "8", "9", "10", "12", "13", "14", "16", "17", "18", NULL))|>
+                              addNA()
+#reordering the levels so they are in ascending order.
 
 #cert_df <- movies |> select(certificate) |> group_by(certificate) |> summarise(count = n()) 
 ```
@@ -181,10 +187,10 @@ movies_genre_extended |>
     theme(axis.ticks.x = element_blank(),
           axis.text.x=element_blank()) +
     facet_grid(~genre) +
-    labs(title = "It seems that Action, Adventure, Fantasy & Sci-Fi, hold the best Gross result in modern times",
+    labs(title = "Action, Adventure, Fantasy & Sci-Fi, hold the best Avg Gross results nowadays",
          subtitle = "On the other hand genres like War, Wester & Sport faced a decline in recent years", 
          x = "Year for each genre (1920-2023)",
-         y = "Average gross by year")
+         y = "Average gross")
 
 ```
 
@@ -199,22 +205,22 @@ movies_genre_extended |>
     theme(axis.ticks.x = element_blank(),
           axis.text.x=element_blank()) +
     facet_grid(~genre) +
-    labs(title = "It seems that Action, Adventure, Fantasy & Sci-Fi, hold the best Gross result in modern times",
+    labs(title = "Action, Adventure, Fantasy & Sci-Fi, hold the best Gross result in modern times",
          subtitle = "On the other hand genres like War, History, Music & Sport seem to have stagnated", 
          x = "Year for each genre (1920-2023)",
-         y = "Average gross by year")
+         y = "Gross")
 
 ```
 
 
 ## Attention Span Section ##########################################################################################
 
-```{r}
-A_span <- movies |> 
-  filter(run_time >0 ) |>
-  mutate(Runtime_bins = run_time %/% 60) |>
-  group_by(Runtime_bins) |>
-  summarise(count = n())
+```{r} 
+# A_span <- movies |>                 # to have an idea of which runtime bins there are & in which proportion
+#   filter(run_time >0 ) |>
+#   mutate(Runtime_bins = run_time %/% 60) |>
+#   group_by(Runtime_bins) |>
+#   summarise(count = n())
 ```
 
 ```{r}
@@ -312,6 +318,8 @@ Runtime_Lenght_df_100_180min <- movies |>
                                    "130-160" = "1",      # 60 min more or less
                                    "160-180" = "2",    # up to 2h (120min)
                                   )) 
+# In dept analysis on movies with runtimes between 100 & 180 mins...
+
 Runtime_Lenght_df_100_180min |>
   select(Runtime_bins,year,gross) |>
   group_by(Runtime_bins,year) |>
@@ -342,11 +350,11 @@ certificate / genre / gross ?? For which cert is the most appropriate gross wise
 ```{r}
 movies_genre_extended |> 
   select(certificate,genre,gross,rating,votes) |>
-  filter(votes >= 2000) |>
+  filter(votes >= 2000 & !is.na(certificate)) |>
   group_by(certificate,genre) |>
-  summarise(sum_gross = sum(gross,na.rm = T)) |>
-  ggplot(aes( x = genre , y = sum_gross)) + 
-  geom_point(aes(color = certificate)) + geom_boxplot()
+  summarise(Big_gross = sum(gross >= 2000000,na.rm = T )) |> # counts the number of movies that got a gross bigger than 2M
+  ggplot(aes( x = genre , y = Big_gross )) + 
+  geom_bar(aes(x = genre, fill = certificate), position = "dodge", stat = "identity")
   
 ```
 #### X Section 
