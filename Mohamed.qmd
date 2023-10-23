@@ -6,21 +6,167 @@ editor: visual
 
 ## Quarto
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+movies |> distinct(dob_stars,stars) |>
+  mutate(dob_stars = year(dob_stars)) |>
+  group_by(dob_stars) |>
+  summarise(count = n()) |>
+  filter(!is.na(dob_stars)) |>
+  ggplot(aes(x=dob_stars,y=count)) +
+  geom_point()
+
+
+movies |> distinct(dob_directors,directors) |>
+  mutate(dob_directors = year(dob_directors)) |>
+  group_by(dob_directors) |>
+  summarise(count = n()) |>
+  filter(!is.na(dob_directors)) |>
+  ggplot(aes(x=dob_directors,y=count)) +
+  geom_point()
+
 ```
 
-You can add options to executable code like this
-
 ```{r}
-#| echo: false
-2 * 2
+movies |> distinct(dob_stars,stars) |>
+  mutate(dob_stars = month(dob_stars)) |>
+  group_by(dob_stars) |>
+  summarise(count = n()) |>
+  filter(!is.na(dob_stars)) |>
+  ggplot(aes(x=dob_stars,y=count)) +
+  geom_bar(stat = "identity")
+
+
+movies |> distinct(dob_stars,stars) |>
+  mutate(dob_year = year(dob_stars),
+         dob_month = month(dob_stars)) |>
+  group_by(dob_year,dob_month) |>
+  summarise(count = n()) |>
+  ggplot(aes(x=dob_year, y=count, col = factor(dob_month)))+
+  scale_y_continuous(limits = c(0,30))+
+  coord_cartesian(xlim = c(1900, 2000))+
+  geom_line()
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+```{r}
+# actors with highest gross
+movies |> distinct(stars,gross,dob_stars,gross_CPI_adjusted) |>
+  group_by(stars,dob_stars) |>
+  reframe(gross = sum(gross,na.rm=T),
+            gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = T)) |>
+  filter(stars!="") |>
+  arrange(desc(gross_CPI_adjusted))
+
+
+```
+# Studio
+```{r}
+
+
+movies |> distinct(title,studio,year) |>
+  group_by(studio,year) |>
+  summarise(count = sum(!is.na(title))) |>
+  filter(!(studio==""|studio=="Studio"|is.na(studio)),count>10) |>
+  ggplot(aes(x=year,y=count,col=factor(studio)))+
+  geom_line()
+
+
+movies |>
+  distinct(title, studio, year) |>
+  filter(studio %in% (
+    movies |>
+    distinct(studio, gross_CPI_adjusted) |>
+    group_by(studio) |>
+    summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+    arrange(desc(gross_CPI_adjusted)) |>
+    filter(!is.na(studio)) |>
+    slice(1:15) |>
+    select(studio) |> unlist()
+  ))
+
+movies |>
+    distinct(studio, gross_CPI_adjusted) |>
+    group_by(studio) |>
+    summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+    arrange(desc(gross_CPI_adjusted)) |>
+    filter(!is.na(studio)) |>
+    slice(1:5) |>
+    select(studio) |> left_join(movies |> distinct(title,studio,year), join_by(studio)) |>
+  group_by(studio,year) |>
+  reframe(count = n()) |>
+  ggplot(aes(x=year,y=count,col=studio))+
+    geom_line()
+
+
+```
+
+```{r}
+movies |> distinct(title,year,studio,gross_CPI_adjusted) |>
+  group_by(studio) |>
+  summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted,na.rm = T)) |>
+  filter(!is.na(studio)) |> ungroup() |>
+  left_join(movies |> distinct(title,rating,studio) |>
+    arrange(desc(rating)) |>
+    group_by(studio) |>
+    summarise(best_title = first(title)),join_by(studio)) |>
+  arrange(desc(gross_CPI_adjusted)) |>
+  slice(1:20) |> 
+  ggplot(aes(x=fct_reorder(studio,gross_CPI_adjusted),y=gross_CPI_adjusted))+
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = best_title, vjust = 0),angle = 0, hjust = 0,size=4)+
+  theme_minimal()+
+  scale_y_continuous(labels = scales::comma, limits = c(0,120e9))+
+  labs(title = "")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))+
+  coord_flip()
+
+
+
+```
+
+
+
+```{r}
+movies |> distinct(studio,year,title) |>
+  group_by(year,studio) |>
+  #summarise(n()) |>
+  mutate(studio = if_else(studio %in% (movies |>
+                                      distinct(studio, gross_CPI_adjusted) |>
+                                      group_by(studio) |>
+                                      summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+                                      arrange(desc(gross_CPI_adjusted)) |>
+                                      filter(!is.na(studio)) |>
+                                      slice(1:5) |>
+                                      select(studio) |> unlist()), studio,"Other"))|>
+  ggplot(aes(x=year, fill=factor(studio)))+
+  geom_bar(position = "fill")+
+  labs(title = "It Seems that Other Studios Are Starting To Take More Market Share In Terms of\nNumber of Movies Produced",
+       subtitle = "Despite the few movies produced by Buena Vista, it maintains spot of top\nGrossing Studios",
+       y="Proportion of Movies Produced")+
+  theme_minimal()
+
+
+```
+Analysis on the past 5-10 years most movies produced simply a filter!
+```{r}
+
+movies |> distinct(studio,year,title,.keep_all = T) |>
+  group_by(year,studio) |>
+  #summarise(n()) |>
+  mutate(studio = if_else(studio %in% (movies |>
+                                        distinct(studio, year,gross_CPI_adjusted) |>
+                                        group_by(studio) |>
+                                        summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+                                        arrange(desc(gross_CPI_adjusted)) |>
+                                        filter(!is.na(studio)) |>
+                                        slice(1:7) |>
+                                        select(studio) |> unlist()), studio,"Other"))|>
+  ggplot(aes(x=year, y=gross_CPI_adjusted,fill=factor(studio)))+
+  geom_bar(stat = "identity",position = "fill")+
+  labs(title = "It Seems that Other Studios Are Starting To Take More Market Share In Terms of\nNumber of Movies Produced",
+       subtitle = "Despite the few movies produced by Buena Vista, it maintains spot of top\nGrossing Studios",
+       y="Proportion of Movies Produced")+
+  theme_minimal()
+
+```
+

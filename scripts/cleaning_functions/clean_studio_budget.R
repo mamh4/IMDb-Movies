@@ -7,11 +7,34 @@ remove_references <- function(text) {
 }
 
 a <- remove_references(studio_and_budget$studio) |> gsub("^\\n", "", x = _) |> gsub("\\n", ", ", x = _)
-b <- gsub("([a-z])([A-Z])", "\\1, \\2", a)
-c <- gsub(pattern = ", Inc",replacement = " Inc", b)
-d <- str_squish(c)
+studio_and_budget$studio <- a
 
-studio_and_budget$studio <- d
+studio_and_budget_unique <- studio_and_budget |> arrange(nchar(studio)) |> select(studio) |>unique()
+studio_and_budget_unique_adjusted <- studio_and_budget |> arrange(nchar(studio)) |> select(studio) |> unique()
+
+for(i in 1:nrow(studio_and_budget_unique_adjusted)) {
+  pattern = studio_and_budget_unique_adjusted[[i, "studio"]]
+  for (k in i:nrow(studio_and_budget_unique_adjusted)) {
+    print(paste("outer loop", i, "inner loop", k))
+    if (grepl(pattern, x = studio_and_budget_unique_adjusted[[k, "studio"]])) {
+      studio_and_budget_unique_adjusted[[k, "studio"]] <- pattern
+    }
+  }
+}
+join_table <- tibble(studio_key = studio_and_budget_unique$studio,
+                     studio = studio_and_budget_unique_adjusted)
+
+studio_and_budget2 <- studio_and_budget |> left_join(join_table, join_by(studio_key =studio))
+studio_and_budget$studio <- studio_and_budget2$studio.y$studio
+
+studio_and_budget_cleaned <- studio_and_budget_cleaned |>
+  mutate(studio = if_else(studio=='20th Century-Fox', '20th Century Fox', studio),
+         studio = if_else(studio == 'Buena Vista International' | studio == 'Buena Vista Distribution' |
+                            studio == 'Buena Vista Film Distribution',
+                          'Buena Vista Pictures', studio),
+         studio = if_else(studio == "Pathe Distribution", "Pathé", studio),
+         studio = if_else(grepl("AFMD",studio),"AFMD",studio)
+         )
 
 # Clean up Budget
 
