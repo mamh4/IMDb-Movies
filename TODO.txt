@@ -1,13 +1,14 @@
 - Intro
-- scarping function prints + saving + not reading the function the function in script -Pierre
-- EDA part including share, analysis of NAs saying if something weird etc. -Mohamed
-- Todo add certificate transformation.
+- EDA Certificate Transformation -Mohamed
+- Upload new Studio + budget data. (push) -Mohamed
+- Making Tables of Variables in the data section. -Mohamed
+- Html / PDF template + table of content + making it look nice -Mohamed
+- Grid size for plots-Mohamed
+- Plots formatting + titles + paragraphs - Arno
+- Basic plots (Gross/Budget with lines+add movie name)+ Budget/ratingOrMetascore
+	+actor/ratingMAYBE + convergence of rating with number of movies (maybe)
 - Analysis:
--- Genre - Arno
--- Run-time - Arno
--- Budget - Pierre
--- Certifacte (Horror, Thriller, Action) - Arno 
--- Studio - Mohamed
+-- Studio - Mohamed (Box Plot Top grossing and Top Rating highlights)+analysis last 10 years
 -- Director - Mohamed/Pierre/Arno
 -- Actor - Mohamed/Pierre/Arno
 

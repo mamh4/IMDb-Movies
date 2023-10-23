@@ -108,8 +108,8 @@ load("../data/scrapped_data/dob_directors10k.Rdata")#data name dob_table_directo
 load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_directors
 
 
-#source("../scripts/cleaning_functions/clean_studio_budget.R")
-load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
+#source("../scripts/cleaning_functions/clean_studio_budget.R") #Cleaning the studio takes about 1.5 hours for >10k votes
+load("../data/cleaned_data/studio_and_budget10k_cleaned3.Rdata")
 
 #source("../scripts/cleaning_functions/clean_dob.R")
 load("../data/cleaned_data/dob_stars10k_cleaned.Rdata")
@@ -135,13 +135,12 @@ population_estimates <- data.frame(year = seq(1900, 2023, 1),
 suppressWarnings({
 movies <- movies |> 
   left_join(CPI,join_by(year==Year)) |>
-  left_join(studio_and_budget[1:4], join_by(title,year)) |>
+  left_join(studio_and_budget_cleaned[1:4], join_by(title,year)) |>
   separate_rows(stars, sep = ",\\s*") |>
   left_join(dob_table_stars_cleaned[1:2],join_by(stars)) |>
   separate_rows(directors, sep = ",\\s*") |>
   left_join(dob_table_directors_cleaned[1:2],join_by(directors)) |>
   separate_rows(genre, sep = ",\\s*") |>
-  separate_rows(studio, sep = ",\\s*") |>
   left_join(population_estimates, join_by(year))
 })
 
@@ -169,13 +168,7 @@ b <- ggplot(CPI,aes(Year, CPI))+
 (a | b)
 
 ```
-
-
-* (new) Data Transformations
-- certificate->age dependent
-- gross adjusted for inflation (time series to justify why we should account for inflation) 
-- Budget adjusted for inflation (time series ,, ,, ,, ...)
-- Ticket sold estimate (current ticket price?)
+Since the data is spanning years since the 1900s we thought that including population and Consumer Price Index is crucial for drawing meaningful conclusions.
 
 
 ## Motivation for data transformation
@@ -190,5 +183,31 @@ movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
 ticket_price_23 <- 11.15
 movies$nr_tickets_sold <- movies$gross_CPI_adjusted / ticket_price_23
 
+suppressWarnings( # Need to report to Posit, case when returns warning NAs introduced by coercion but this is not true!
+movies$certificate_adjusted <- case_when(   # Check Example below
+  movies$certificate %in% c("Approved", "G", "GP", "M", "M/PG", "PG") ~ 0,
+  movies$certificate == "NC-17" ~ 18,
+  is.na(movies$certificate) ~ NA,
+  movies$certificate == "Unrated" ~ NA,
+  movies$certificate == "Not Rated" ~ NA,
+  movies$certificate == "PG-13" ~ 13,
+  (movies$year >= 1970 & movies$certificate == "R") ~ 17,
+  (movies$year < 1970 & movies$certificate == "R") ~ 16,
+  TRUE ~ as.integer(movies$certificate)
+))
+
+# Example:
+# Need to report to Posit, case when returns warning NAs introduced by coercion but this is not true!
+# d <- c("a","b","0")
+# a <- case_when(
+#  d=="a"~1,
+#  d=="b"~2,
+#  TRUE~as.numeric(d)
+# )
+
+
 ```
+
+There are 5 "Un Rated" movies and 7 "Not Rated" movies. That we set to NAs. Interstingly the certificate "R" has changed from the age of 16 to 17 post 1970.
+
 
