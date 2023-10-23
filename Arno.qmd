@@ -18,15 +18,12 @@ library(ggplot2)
 library(lubridate)
 library(forcats)
 library(stringr)
+library(tidyverse)
 ```
 
 ```{r}
 #load("data/full_movies_v1.RData")
-load("data/cleaned_data/full_IMDb_Scrape.RData")
-```
-
-```{r}
-#test <-movies |> select(title,year,certificate) |> filter(year <= 1970 & certificate == "R" | certificate == "X")
+#load("data/cleaned_data/full_IMDb_Scrape.RData")
 ```
 
 ```{r}
@@ -37,22 +34,6 @@ load("data/cleaned_data/full_IMDb_Scrape.RData")
 #  summarise(count = n())
 ```
 
-```{}
-data_clean_certofgenre_v2 <- movies |> 
-  mutate(certificate = ifelse(certificate == "\nAction            ", NA, certificate), 
-        certificate = ifelse(certificate == "\nAction, Comedy, Crime            ", NA, certificate),
-        certificate = ifelse(certificate == "\nAction, Comedy, Thriller            ", NA, certificate),
-        certificate = ifelse(certificate == "\nAction, Crime, Thriller            ", NA, certificate),
-        certificate = ifelse(certificate == "\nAction, Drama            ", NA, certificate),
-        certificate = ifelse(certificate == "\nAction, Drama, Fantasy            ", NA, certificate),
-        certificate = ifelse(certificate == "\nAction, Drama, Thriller            " , NA, certificate),
-        certificate = ifelse(certificate == "\nAction, Mystery            ", NA, certificate),
-        certificate = ifelse(certificate == "\nAction, Thriller            ", NA, certificate),
-        certificate = ifelse(certificate == "\nAdventure            ", NA, certificate))
-
-ddd <- data_clean_certofgenre |> select(certificate) |> group_by(certificate) |> summarise(count = n()) 
-  
-```
 
 ```{r message=TRUE}
 movies <- movies |> 
@@ -64,7 +45,6 @@ movies <- movies |>
                                   "0" = "GP",
                                   "0" = "M",
                                   "0" = "M/PG",
-                                  "6" = "6",
                                   "18" = "NC-17", 
                                   NULL = "Not Rated",
                                   "0" = "PG",
@@ -92,43 +72,18 @@ certificate_to_age <- function(cert, year){
 }
 ```
 
-```{}
-  
-  #if(is.na(cert)){return(cert)}
-  #if(year < 1970 & cert == "R"){
-   # return("16")
-  #} else if(year >= 1970 & cert =="R" ){
-    #return("17")
-  #} else {
-   # return(cert)
-  #}
-
-
-#cert_to_age <- function(cert,year){
-  #print(typeof(cert))
- # v <- ifelse(year >= 1970 & cert =="R", "17", cert)
-  #print(v)
-  #v_2 <-ifelse(year < 1970 & v =="R", "16", cert)
-  #print(v_2)
-  #return(v_2)
-#}
-```
 
 ```{r message=TRUE}
 movies <- movies |>
   mutate(certificate = certificate_to_age(certificate,year)) 
 
 movies$certificate <- factor( movies$certificate, 
-                              levels = c("0", "6", "7", "8", "9", "10", "12", "13", "14", "16", "17", "18", NULL))|>
-                              addNA()
+                              levels = c("0", "6", "7", "8", "9", "10", "12", "13", "14", "16", "17", "18", NULL))
+                              
 #reordering the levels so they are in ascending order.
 
 #cert_df <- movies |> select(certificate) |> group_by(certificate) |> summarise(count = n()) 
 ```
-
-
-
-
 ## Data Explo Section + Analysis on Competition in recent times #####################################################
 ```{r Competition Inc}
 movies |> 
@@ -139,13 +94,13 @@ movies |>
 
 ## Genre section #####################################################
 ```{r Genre DF}
-
-movies_genre_extended <- movies |>
-  separate_rows(genre, sep = ",\\s*") |>
-  mutate(genre = str_squish(genre))
-
-
-# genreList <- unique(unlist(strsplit(str_squish(unique(movies$genre) ),"," ))) # to have an idea of the genres in the dataset
+# 
+# movies_genre_extended <- movies |>
+#   separate_rows(genre, sep = ",\\s*") |>
+#   mutate(genre = str_squish(genre))
+# 
+# 
+# # genreList <- unique(unlist(strsplit(str_squish(unique(movies$genre) ),"," ))) # to have an idea of the genres in the dataset
 ```
 
 ```{r}
@@ -177,39 +132,45 @@ movies_genre_extended <- movies |>
 ## Genre Analysis Section #####################################################
 
 ```{r Analysis : Genre}
-movies_genre_extended |>
-  filter(genre != "Adult" & genre != "News" & genre != "Reality-TV" & genre != "Talk-Show") |>
-  group_by(genre,year) |>
-  summarise(avggross = mean(gross,na.rm = T)) |>
-  ggplot(aes( x = year, y = avggross)) + # maybe it is better to plot by avg gross instead of only gross
-    geom_point(aes( color = genre)) +
-    geom_smooth() +
-    theme(axis.ticks.x = element_blank(),
-          axis.text.x=element_blank()) +
-    facet_grid(~genre) +
-    labs(title = "Action, Adventure, Fantasy & Sci-Fi, hold the best Avg Gross results nowadays",
-         subtitle = "On the other hand genres like War, Wester & Sport faced a decline in recent years", 
-         x = "Year for each genre (1920-2023)",
-         y = "Average gross")
+  movies |>
+    #filter(genre != "Adult" & genre != "News" & genre != "Reality-TV" & genre != "Talk-Show") |>
+    group_by(genre,year) |>
+    summarise(MeanGross = mean(gross_CPI_adjusted,na.rm = T)) |>
+    ggplot(aes( x = year, y = MeanGross)) + 
+      geom_point() +
+      geom_smooth() +
+      theme(axis.ticks.x = element_blank(),
+            axis.text.x=element_blank()) +
+      facet_grid(~genre) +
+      labs(title = "Action, Adventure, Fantasy & Sci-Fi, hold the best Gross result in modern times",
+           subtitle = "On the other hand genres like War, History, Music & Sport seem to have stagnated", 
+           x = "Year for each genre (1920-2023)",
+          y = " Mean Gross") +
+    scale_y_continuous(limits = c(10,NA),oob = squish)
+
+  
+
 
 ```
 
 
 ```{r Analysis : Genre bis}
-movies_genre_extended |>
-  filter(genre != "Adult" & genre != "News" & genre != "Reality-TV" & genre != "Talk-Show") |>
-  group_by(genre,year) |>
-  ggplot(aes( x = year, y = gross)) + 
-    geom_point(aes( color = genre)) +
-    geom_smooth() +
-    theme(axis.ticks.x = element_blank(),
-          axis.text.x=element_blank()) +
-    facet_grid(~genre) +
-    labs(title = "Action, Adventure, Fantasy & Sci-Fi, hold the best Gross result in modern times",
-         subtitle = "On the other hand genres like War, History, Music & Sport seem to have stagnated", 
-         x = "Year for each genre (1920-2023)",
-         y = "Gross")
-
+suppressWarnings({
+  movies |>
+    group_by(genre,year) |>
+    summarise(TotalGross = sum(gross_CPI_adjusted,na.rm = T), .groups = "keep") |>
+    ggplot(aes( x = year, y = TotalGross)) + 
+      geom_point() +
+      geom_smooth() +
+      theme(axis.ticks.x = element_blank(),
+            axis.text.x=element_blank()) +
+      facet_grid(~genre) +
+      labs(title = "Action, Adventure, Fantasy & Comedy, hold the best Gross result in modern times",
+           subtitle = "On the other hand genres like War, History, Music & Sport seem to have stagnated / decresed in popularity", 
+           x = "Year for each genre (1920-2023)",
+          y = "Total Gross") +
+    scale_y_continuous(limits = c(10,NA),oob = squish)
+})
 ```
 
 
@@ -218,127 +179,118 @@ movies_genre_extended |>
 ```{r} 
 # A_span <- movies |>                 # to have an idea of which runtime bins there are & in which proportion
 #   filter(run_time >0 ) |>
-#   mutate(Runtime_bins = run_time %/% 60) |>
-#   group_by(Runtime_bins) |>
+#   mutate(runtime_bins = run_time %/% 60) |>
+#   group_by(runtime_bins) |>
 #   summarise(count = n())
 ```
 
 ```{r}
-Runtime_Lenght_df <- movies |> 
+Runtime_Lenght_bins <- movies |> 
   filter(run_time >0) |>
-  mutate(Runtime_bins = as.factor(run_time %/% 60)) |>
-  mutate(Runtime_bins = fct_recode(Runtime_bins,
-                                   "Very Short" = "0", # less than 60 min
-                                   "Short" = "1",      # 60 min more or less
-                                   "Average" = "2",    # up to 2h (120min)
-                                   "Long" = "3",       # up to 3h (120-180min)
-                                   "Very Long" = "4",  # up to 4h and more are categorised as "very long" movies
+  mutate(runtime_bins = as.factor(run_time %/% 60)) |>
+  mutate(runtime_bins = fct_recode(runtime_bins,
+                                   "Very Short" = "0", # up to 59 min
+                                   "Short" = "1",      # 60-119 min more or less
+                                   "Average" = "2",    # up to 3h (120-179min)
+                                   "Long" = "3",       # up to 4h (180-239min)
+                                   "Very Long" = "4",  # up to 5h and more are categorized as "very long" movies
                                    "Very Long" = "5",
                                    "Very Long" = "6",
-                                   "Very Long" = "7",
-                                   "Very Long" = "8",
-                                   "Very Long" = "9",
-                                   "Very Long" = "10",
-                                   "Very Long" = "11",
-                                   "Very Long" = "12",
-                                   "Very Long" = "13",
-                                   "Very Long" = "14",
-                                   "Very Long" = "15",
-                                   "Very Long" = "16"))
+                                   "Very Long" = "7")) |>
+  select(title,year,run_time,runtime_bins,gross_CPI_adjusted,rating,metascore,votes) |>
+  distinct(title, .keep_all = TRUE)
+```
+
+```{r}
+A_span_2 <- Runtime_Lenght_bins |>                 # to have an idea of which runtime bins there are & in which proportion
+  group_by(runtime_bins) |>
+  summarise(count = n())
+
 ```
 
 
 ```{r}
-Runtime_Lenght_df |>
-  select(Runtime_bins,year,rating) |>
-  group_by(Runtime_bins,year) |>
-  summarise( Bin_count = n(),
-             AVG_rating = mean(rating, na.rm = T)) |>
+Runtime_Lenght_bins |>
+  select(runtime_bins,year,rating) |>
+  group_by(runtime_bins,year) |>
+  summarise(AVG_rating = mean(rating, na.rm = T)) |>
   ggplot(aes( x = year , y = AVG_rating)) +
-  geom_point(aes(shape = Runtime_bins, color = Runtime_bins))+
-  geom_smooth(aes(color = Runtime_bins), se =TRUE) +
-  labs(title = "Short & average lenght films seem to have an uptick in ratings",
-       subtitle = "Although long movies seem to generate better ratings in recent years, one must bear in mind that they have the largest standard deviation among the other categories",
+  geom_point(aes(shape = runtime_bins, color = runtime_bins)) +
+  geom_smooth(aes(color = runtime_bins), se =FALSE) +
+  labs(title = "Attention span seem to decrese in recent years",
+       subtitle = "Although long movies seem to generate better ratings in recent years, one must bear in mind\nthat they have the largest standard deviation among the other categories",
        x = "Year",
        y = "Average Rating",
        color = "Runtime Bins",
        shape = "Runtime Bins") +
-  coord_cartesian(xlim = c(1918,2025))
+  coord_cartesian(xlim = c(1915,2025)) +
+  scale_x_continuous(breaks = seq(1915,2025,6)) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
 
 ```
 ```{r}
-Runtime_Lenght_df |>
-  select(Runtime_bins,year,gross) |>
-  group_by(Runtime_bins,year) |>
-  summarise( Bin_count = n(),
-             AVG_gross = mean(gross, na.rm = T)) |>
+# movies |> 
+#   filter(run_time >0) |>
+#   mutate(runtime_bins = as.factor(run_time %/% 60)) |>
+#   select(title,year,runtime_bins,gross_CPI_adjusted) |>
+#   distinct(title, .keep_all = TRUE) |>
+#   select(runtime_bins,year,gross_CPI_adjusted)|>
+#   group_by(runtime_bins,year)|>
+#   summarise(AVG_gross = mean(gross_CPI_adjusted,na.rm = T))|>
+#   ggplot(aes(x = year, y = AVG_gross))+
+#   geom_point(aes(shape = runtime_bins, color = runtime_bins))+
+#   geom_smooth(aes(color = runtime_bins), se =FALSE) +
+#   labs(title = "Short & average lenght films have slight increase in gross each year",
+#        subtitle = "Long movies have the most potential, but it is either a hit or a miss",
+#        x = "Year",
+#        y = "Average Gross",
+#        color = "Runtime Bins",
+#        shape = "Runtime Bins") +
+#   coord_cartesian(xlim = c(1900,2025), ylim = c(-10,3.5e+08))
+# ggplot(data = Runtime_Lenght_df , mapping = aes( x = Runtime_bins , y = gross, color = year )) +
+#   geom_point()
+# Runtime_Lenght_bins |> 
+#   select(runtime_bins,year,gross_CPI_adjusted,votes) |>
+#   group_by(runtime_bins,year) |>
+#   summarise(avggross = mean(gross_CPI_adjusted,na.rm = T),
+#             avgvotes = mean(votes)) |>
+#   ggplot(aes(x = year , y = avgvotes)) +
+#   geom_point() + geom_smooth() +
+#   facet_grid(~runtime_bins)
+
+```
+
+```{r}
+Runtime_Lenght_bins_90_180min <- movies |> 
+  filter(run_time >90 & run_time <= 180) |>
+  mutate(runtime_bins = as.factor((run_time-90) %/% 30)) |>
+  mutate(runtime_bins = fct_recode(runtime_bins,
+                                   "90-119" = "0",    #  less than 2h
+                                   "120-149" = "1",    # 2h-3h more or less
+                                   "150-180" = "2",
+                                   "150-180" = "3"))    # up to 3h (180min)
+                                   
+# In dept analysis on movies with runtimes between 90 & 180 mins...
+
+Runtime_Lenght_bins_90_180min |>
+  select(runtime_bins,year,gross_CPI_adjusted) |>
+  group_by(runtime_bins,year) |>
+  summarise(AVG_gross = mean(gross_CPI_adjusted, na.rm = T)) |>
   filter(AVG_gross>=0) |>
   ggplot(aes( x = year , y = AVG_gross)) +
-  geom_point(aes(shape = Runtime_bins, color = Runtime_bins))+
-  geom_smooth(aes(color = Runtime_bins), se =FALSE) +
-  labs(title = "Short & average lenght films have slight increase in gross each year",
-       subtitle = "Long movies have the most potential, but it is either a hit or a miss",
-       x = "Year",
-       y = "Average Gross",
-       color = "Runtime Bins",
-       shape = "Runtime Bins") +
-  coord_cartesian(xlim = c(1950,2025), ylim = c(-10,2.5e+08))
-```
-
-Seem that when the movie is too short, individuals tend to think that it might not be worth the money to go to the cinema.
-
-
-
-
-```{r}
-ggplot(data = Runtime_Lenght_df , mapping = aes( x = Runtime_bins , y = gross, color = year )) +
-  geom_point()
-```
-
-
-```{r}
-Runtime_Lenght_df |> 
-  select(Runtime_bins,year,gross,votes) |>
-  group_by(Runtime_bins,year) |>
-  summarise(avggross = mean(gross,na.rm = T),
-            avgvotes = mean(votes)) |>
-  ggplot(aes(x = year , y = avgvotes)) +
-  geom_point() + geom_smooth() +
-  facet_grid(~Runtime_bins)
-  
-```
-seem that the average number of votes are in decline, in recent years. Maybe by the fact that only dedicated viewers create accounts on IMDB to rate movies.
-
-```{r}
-Runtime_Lenght_df_100_180min <- movies |> 
-  filter(run_time >100 & run_time <= 180) |>
-  mutate(Runtime_bins = as.factor((run_time-100) %/% 30)) |>
-  mutate(Runtime_bins = fct_recode(Runtime_bins,
-                                   "100-130" = "0", # less than 60 min
-                                   "130-160" = "1",      # 60 min more or less
-                                   "160-180" = "2",    # up to 2h (120min)
-                                  )) 
-# In dept analysis on movies with runtimes between 100 & 180 mins...
-
-Runtime_Lenght_df_100_180min |>
-  select(Runtime_bins,year,gross) |>
-  group_by(Runtime_bins,year) |>
-  summarise( Bin_count = n(),
-             AVG_gross = mean(gross, na.rm = T)) |>
-  filter(AVG_gross>=0) |>
-  ggplot(aes( x = year , y = AVG_gross)) +
-  geom_point(aes(shape = Runtime_bins, color = Runtime_bins))+
-  geom_smooth(aes(color = Runtime_bins), se =FALSE) +
+  geom_point(aes(shape = runtime_bins, color = runtime_bins))+
+  geom_smooth(aes(color = runtime_bins), se =FALSE) +
   labs(title = "Taking a closer look on movies with lenght 100-180min",
        subtitle = "Safe bet would be arround 130min, it has the lowest standard error",
        x = "Year",
        y = "Average Gross",
        color = "Runtime Bins",
        shape = "Runtime Bins") +
-  annotate("text",x = 1970, y = 2.2e+08, vjust = "top", hjust = "center", label = "Correlation between lenght & gross volatility
-           seem to play a role for movies" )
-  coord_cartesian(xlim = c(1950,2025), ylim = c(-10,2.5e+08))
-
+  annotate("text",x = 1970, y = 7e+08, vjust = "top", hjust = "center", label = "Correlation between lenght & gross volatility
+           seem to play a role for movies" ) +
+  coord_cartesian(xlim = c(1915,2025), ylim = c(0,3.3e+08)) +
+  scale_x_continuous(breaks = seq(1915,2025,6)) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
 
 
@@ -348,15 +300,33 @@ Runtime_Lenght_df_100_180min |>
 
 certificate / genre / gross ?? For which cert is the most appropriate gross wise / rating wise / ...
 ```{r}
-movies_genre_extended |> 
-  select(certificate,genre,gross,rating,votes) |>
-  filter(votes >= 2000 & !is.na(certificate)) |>
+movies |> 
+  select(certificate,genre,gross_CPI_adjusted,rating,votes) |>
+  filter(!is.na(certificate)) |>
+  filter(genre == "Action"|genre == "Animation"|genre == "Horror"|genre == "Sci-Fi" |genre =="Thriller")|>
   group_by(certificate,genre) |>
-  summarise(Big_gross = sum(gross >= 2000000,na.rm = T )) |> # counts the number of movies that got a gross bigger than 2M
-  ggplot(aes( x = genre , y = Big_gross )) + 
-  geom_bar(aes(x = genre, fill = certificate), position = "dodge", stat = "identity")
+  summarise(Total_gross = sum(gross_CPI_adjusted,na.rm = T )) |> 
+  ggplot(aes( x = genre , y = Total_gross )) + 
+  geom_bar(aes(x = genre, fill = certificate), position = "dodge", stat = "identity") + 
+  labs( title = "Certificates for certain genres play a key role",
+        subtitle = "For Horror a certificate around 16+ years is adequate to maximise profits",
+        x = "Genre",
+        y = "Total gross by certificate")
+```
+
+```{r}
+# movies |> 
+#   select(certificate,genre,gross_CPI_adjusted,rating,votes) |>
+#   
+#   group_by(certificate,genre) |>
+#   summarise(Big_rating = mean(rating,na.rm = T )) |> # counts the number of movies that got a gross bigger than 2M
+#   filter(!is.na(certificate)) |>
+#   ggplot(aes( x = genre , y = Big_rating )) + 
+#   geom_bar(aes(x = genre, fill = certificate), position = "dodge", stat = "identity")
   
 ```
+
+
 #### X Section 
 
 ```{r}
