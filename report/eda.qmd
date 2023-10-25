@@ -5,7 +5,11 @@ source(here::here("scripts/setup.R"))
 ```
 
 ## Missing value Analysis
+
 ### IMDb Movies Subset
+
+For the Movies exceeding 10,000 votes the only variables identified with missing values
+
 ```{r missing-values-imdb}
 movies_collapsed <- movies[1:11] |>
   group_by_at(vars(-directors,-stars,-genre)) |>
@@ -25,12 +29,13 @@ data.frame(column = names(movies_collapsed),
   geom_hline(yintercept = nrow(movies_collapsed),linetype="dashed")+
   annotate("text", x = 1, y = nrow(movies_collapsed), vjust = "top", hjust = "left",
            label = "Data set size: 10,555")+
-  labs(title = "Around 1/3 of Movies with Number of Votes Greater Than 10k Are Missing\nGross Amounts",
+  labs(title = "Around 1/3 of Movies with Number of Votes Greater Than 10k Are\nMissing Gross Amounts",
        x="Column Name",
        y="Number of Missing Entries")+
   theme_minimal()
 
 ```
+
 We notice that in the original movies subset, we have missing values certificate, gross and metascore. Worth mentioning that the Genre, Stars and Directors entries contain comma separated values. Although they do not show missing values it is possible that the stars column is missing key actors or that a genre is missing.
 
 Of the three variables gross is the most crucial to our research inquiry, we dive deeper on it
@@ -54,11 +59,15 @@ movies_collapsed |> select(year,gross) |>
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
-We first observe that the Number of Featured movies has increased over the past years. In the early and mid 1900s we notice that there is a noticeable gap between the two lines (Number of Featured Movies and Number of Featured Movies with Reported Gross). This however seems to improve in the late 1900s and early 2000s and then the reporting quality of Gross drops again. There are two possible theoretical explanations. 
-* The increase in the number of Featured films poses difficulty in capturing the Gross amounts.
-* It takes time to get reliable estimates to be hosted on IMDb's website.
+
+We first observe that the Number of Featured movies has increased over the past years. In the early and mid 1900s we notice that there is a noticeable gap between the two lines (Number of Featured Movies and Number of Featured Movies with Reported Gross). This however seems to improve in the late 1900s and early 2000s and then the reporting quality of Gross drops again. There are two possible theoretical explanations.
+
+-   The increase in the number of Featured films poses difficulty in capturing the Gross amounts.
+
+-   It takes time to get reliable estimates to be hosted on IMDb's website.
 
 ### Studio And Budget Data set
+
 ```{r studio-budget-missing-values}
 data.frame(column = names(studio_and_budget),
             nr_missing_values = sapply(studio_and_budget, 
@@ -75,26 +84,35 @@ data.frame(column = names(studio_and_budget),
   theme_minimal()
 
 ```
-Out of 10,555 entries we miss around 1/3 of the budget values. This is slightly worse when compared to the scrapped information stored in the column "budget_orig". The reason is that we decided to drop gross amounts that are reported in non-US$ currency for the sake of fair comparison. Converting non US$ currency poses difficulties in two-fold:
-* Identifying the reporting currency as the currency can be reported using symbol, text or mixture of both.
-* Obtaining an Exchange rate per year per currency for conversion.
 
-We managed to obtain around 9500 of the studios using Wikipedia. Having non-complete data can be attributed to: 
-* Missing studio entries in the Wikipedia page.
-* Missing the Wikipedia page of the Movie.
-* Unable to find the Wikipedia page of the Movie.
+Out of 10,555 entries we miss around 1/3 of the budget values. This is slightly worse when compared to the scrapped information stored in the column "budget_orig". The reason is that we decided to drop gross amounts that are reported in non-US\$ currency for the sake of fair comparison. Converting non US\$ currency poses difficulties in two-fold:
 
+-   Identifying the reporting currency as the currency can be reported using symbol, text or mixture of both.
+
+-   Obtaining an Exchange rate per year per currency for conversion.
+
+We managed to obtain around 9500 of the studios using Wikipedia. Having non-complete data can be attributed to:
+
+-   Missing studio entries in the Wikipedia page.
+
+-   Missing the Wikipedia page of the Movie.
+
+-   Unable to find the Wikipedia page of the Movie.
 
 ### Date Of Birth Data sets
-We managed to scrape approx. 60% of the date of births of directors (4347 total number of directors) and approx. 66% of the starring cast. The reason as to not getting full information can be attributed to either:
-* Missing Wikipedia Page.
-* Page exists but does not come up as first search result when searching the star/director name on Wikipedia.
 
+We managed to scrape approx. 60% of the date of births of directors (4347 total number of directors) and approx. 66% of the starring cast. The reason as to not getting full information can be attributed to one of the following:
 
+-   Wrong date format e.g. (Missing the day, Missing the day and the month or invalid day i.e. '00')
+
+-   Missing Wikipedia Page.
+
+-   Page exists but does not come up as first search result when searching the star/director name on Wikipedia.
 
 ## Glimpse of the Success Variables
 
 ### Gross and Gross Adjusted for Inflation
+
 ```{r gross-analysis}
 
 movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
@@ -106,7 +124,7 @@ movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
   ggplot(aes(x=year))+
   geom_line(aes(y=total_gross_CPI_adjusted), col = "blue")+
   geom_line(aes(y=total_gross), col = "red")+
-  geom_line(aes(y=total_gross_CPI_adjusted),col = "purple",data = .%>%
+  geom_line(aes(y=total_gross_CPI_adjusted),col = "green",data = .%>%
     filter(year<=1943,year>=1936))+
   scale_x_continuous(breaks = seq(1915,2025,6))+
   scale_y_continuous(labels = scales::comma)+
@@ -115,7 +133,7 @@ movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
   annotate("text", x = 1915, y = 14e9, vjust = "bottom", hjust = "left",
            label = "Gross", color = "red")+
   labs(title = "Total Gross and CPI Udjusted Trend Upwards",
-       subtitle = "A noticable decline around Covid-19 (2020-2022) and a surprising behaviour\naround WWII (1935-1945)",
+       subtitle = "A noticable decline around Covid-19 (2020-2022) and a bizarre behaviour\naround WWII (1935-1945)",
        y = "Total Gross\nTotal CPI Adjusted Gross")+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
@@ -138,51 +156,76 @@ movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
            label = "CPI Adjusted Gross", color = "blue")+
   annotate("text", x = 1935, y = 45e8, vjust = "bottom", hjust = "left",
            label = "Gross", color = "red")+
-  labs(title = "The Surprising Behaviour is During The Years 1937, 1940 and 1942",
+  labs(title = "The Bizarre Behaviour is During The Years 1937, 1940 and 1942",
        y = "Total Gross\nTotal CPI Adjusted Gross")+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
 ```
-#### 1937,40,42 Analysis
-```{r 1937-40-42-analysis}
 
-movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
+#### 1937,39,40,42 Analysis
+
+```{r 1937-39-40-42-analysis, out.width="700px", out.height="500px"}
+
+a <- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
   filter(year==1937,!is.na(gross)|gross>0) |>
   ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
   geom_bar(stat = "identity") +
   scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
-  labs(title = "Snow White and the Seven Dwarfs Comprises More than 97%\nof the Gross Amount of The Year 1937",
-       x="Movie Titles With Gross Amount",
+  labs(title = "The Bizarre Behaviour at the Years 1937, 1939, 1940\nand 1942 Can be Explained By a Handful of Movies",
+       x="",
        y="CPI Adjusted Gross Amount")+
-  theme_minimal() +
-  coord_flip()
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust=1))
 
-movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
+b <- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
+  filter(year==1939,!is.na(gross)|gross>0) |>
+  ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
+  labs(x="",
+       y="CPI Adjusted Gross Amount")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust=1),
+        axis.title.y = element_blank(),    # Removes the y-axis title
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())
+
+c <- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
   filter(year==1940,!is.na(gross)|gross>0) |>
   ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
   geom_bar(stat = "identity") +
   scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
-  labs(title = "Pinocchio (48.4%) and Fantasia (43.9%) Together Comprise\n92% of The Gross Amount of The Year 1940",
-       x="Movie Titles With Gross Amount",
+  labs(x="Movie Titles With Gross Amount",
        y="CPI Adjusted Gross Amount")+
-  theme_minimal() +
-  coord_flip()
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust=1),
+        axis.title.y = element_blank(),    # Removes the y-axis title
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())
 
-movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
+d<- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
   filter(year==1942,!is.na(gross)|gross>0) |>
   ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
   geom_bar(stat = "identity") +
-  scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
-  labs(title = "Bambi Comprises Almost 73% of the\nGross Amount of The Year 1942",
-       x="Movie Titles With Gross Amount",
+  scale_y_continuous(labels= scales::comma,limits = c(0,45e8))+
+  labs(x="",
        y="CPI Adjusted Gross Amount")+
-  theme_minimal() +
-  coord_flip()
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust=1),
+        axis.title.y = element_blank(),    # Removes the y-axis title
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank())
+
+(a|b|c|d)
 
 # code for percentages
 # movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
 #    filter(year==1937,!is.na(gross)|gross>0) |>
+#    mutate(proportion = gross_CPI_adjusted / sum(gross_CPI_adjusted))
+#
+# movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
+#    filter(year==1939,!is.na(gross)|gross>0) |>
 #    mutate(proportion = gross_CPI_adjusted / sum(gross_CPI_adjusted))
 # 
 # movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
@@ -194,12 +237,29 @@ movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
 #    mutate(proportion = gross_CPI_adjusted / sum(gross_CPI_adjusted))
 
 
+movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
+  filter(year %in% c(1937,1939,1940,1942),!is.na(gross)|gross>9e7) |>
+  mutate(ordering = - year + (gross_CPI_adjusted /(gross_CPI_adjusted+1)))|>
+  ggplot(aes(x=fct_reorder(title,desc(ordering)), y=gross_CPI_adjusted,gross))+
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
+  facet_grid(. ~ factor(year), scales="free_x", space="free_x")+
+  labs(title = "The Bizarre Behaviour at the Years 1937, 1939, 1940\nand 1942 Can be Explained By a Handful of Movies",
+       x="",
+       y="CPI Adjusted Gross Amount")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust=1,vjust=0.25))
+  #theme(panel.spacing=unit(0,"pt"), 
+  #      panel.border=element_rect(colour="grey50", fill=NA))
+
 ```
 
+Snow White and the Seven Dwarfs comprises more than 97% of the gross amount of The year 1937. Gone with the Wind comprises more than 91% of the gross amount of The Year 1937. Pinocchio (48.4%) and Fantasia (43.9%) together comprise 92% of The gross amount of the year 1940. Bambi comprises almost 73% of the gross amount of The year 1942
 
 ### User Ratings and Meta score
+
 ```{r ratings-analysis}
-movies_collapsed |> group_by(year) |>
+movies |> distinct(year,rating,metascore,title) |> group_by(year) |>
   summarise(mean_rating = mean(rating,na.rm=T),
             mean_metascore_standardised = mean(metascore/10,na.rm=T)) |>
   filter(!is.na(mean_metascore_standardised)) |>
@@ -219,11 +279,11 @@ movies_collapsed |> group_by(year) |>
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
 ```
-To conduct this comparison we standardised the Meta score ratings (From 0-100 to 0-10). This way we can compare it on a similar scale to IMDb User ratings. We first notice that the Meta score critics' ratings were largely missing up until 1930. In addition, we find a small discrepancy in comparison to IMDb's User Ratings. Interestingly this discrepency although remained switched direction after 1970. Prior to the early 1970s, critics tended to give movies higher ratings than IMDb users\ndid. Conversely, after that period, the situation reversed.
 
-
+To conduct this comparison we standardised the Meta score ratings (From 0-100 to 0-10). This way we can compare it on a similar scale to IMDb User ratings. We first notice that the Meta score critics' ratings were largely missing up until 1930. In addition, we find a small discrepancy in comparison to IMDb's User Ratings. Interestingly this discrepancy although remained switched direction after 1970. Prior to the early 1970s, critics tended to give movies higher ratings than IMDb users did. Conversely, after that period, the situation reversed.
 
 ### Estimated Number of Tickets Sold
+
 ```{r estimated-nr-tickets-analysis}
 # Add the proportion of movies that have gross values
 movies |> distinct(title, year,run_time, .keep_all = TRUE) |>
@@ -239,9 +299,8 @@ movies |> distinct(title, year,run_time, .keep_all = TRUE) |>
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
-This plot shows a very similar pattern to CPI Adjusted Gross we've witnessed earlier. Similarly the cause for the surprising peaks between 1935 and 1945 is attributed to the movies Snow White and the Seven Dwarfs (1937), Pinocchio and Fantasia (1940), Bambi(1942).
 
-
+This plot shows a very similar pattern to CPI Adjusted Gross we've witnessed earlier. Similarly the cause for the bizarre peaks between 1935 and 1945 is attributed to the movies Snow White and the Seven Dwarfs (1937), Pinocchio and Fantasia (1940), Bambi(1942).
 
 ## Market Share Analysis (Movies and the Entertainment Industry)
 
@@ -272,12 +331,12 @@ movies |> distinct(title,year,run_time,population, .keep_all = TRUE) |>
   scale_x_continuous(breaks = seq(1915,2025,6)) +
   scale_y_continuous(limits = c(0,1))+
   labs(y="Proportion of Estimated Views",
-       subtitle = "Estimated Percentage of US Population Watching Snow White\nand The Sweven Dwarfs Exceed 80%")+
+       subtitle = "If All the views took place at 1937. Estimated Percentage of US\nPopulation Watching Snow White and The Sweven Dwarfs Exceed 80%")+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
 ```
+
 It seems as if the proportion of US population watching Featured Films has declined the 2000s in comparison to Earlier but if we recall from earlier, the reported gross amounts for films in the 2000s are mostly missing which impacts the number of views estimate.
 
 Smallest Budget + Longest Film?
-

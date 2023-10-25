@@ -5,22 +5,24 @@ library(stringr)
 library(tidyr)
 
 
-movies <- tibble(
-  title = character(),
-  year = integer(),
-  certificate = character(),
-  run_time = integer(),
-  genre = character(),
-  directors = character(),
-  stars = character(),
-  rating = numeric(),
-  metascore = integer(),
-  votes = integer(),
-  gross = numeric()
-)
-
 scrape_movies <- function(n=10000,min_number_votes = 10000, print_progress = FALSE){
+
+  movies <- tibble(
+    title = character(),
+    year = integer(),
+    certificate = character(),
+    run_time = integer(),
+    genre = character(),
+    directors = character(),
+    stars = character(),
+    rating = numeric(),
+    metascore = integer(),
+    votes = integer(),
+    gross = numeric()
+  )
   
+  
+    
   start_time <- Sys.time()
   
   url <- paste0('https://www.imdb.com/search/title/?title_type=feature&num_votes=',

@@ -1,0 +1,148 @@
+---
+title: "Diamonds distribution dashboard"
+output: flexdashboard::flex_dashboard
+runtime: shiny
+---
+
+```{r setup, include = FALSE}
+library(flexdashboard) 
+library(tidyverse)
+knitr::opts_chunk$set(fig.width = 5)
+```
+
+# Statistics
+
+## Column 1 {.tabset}
+
+### Movies
+
+```{r}
+
+load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
+
+movies <- movies |>
+  filter(votes>=10000)
+
+movies_collapsed <- movies[1:11] |>
+  group_by_at(vars(-directors,-stars,-genre)) |>
+  summarise(
+    directors = paste(directors, collapse = ', '),
+    stars = paste(stars, collapse = ', '),
+    genre = paste(genre, collapse = ', '),
+    .groups = "drop") |>
+  ungroup()
+
+# Define genres for the filter
+genres <- unique(movies_collapsed$genre)
+
+selectInput("genreFilter", "Select Genre:", choices = c("All", genres), selected = "All")
+
+filtered_movies <- reactive({
+  genre_filter <- input$genreFilter
+  if (genre_filter == "All") {
+    filtered_data <- movies_collapsed
+  } else {
+    filtered_data <- filter(movies_collapsed, genre == genre_filter)
+  }
+  return(filtered_data)
+})
+
+output$moviesPlot <- renderPlot({
+  filtered_data <- filtered_movies()
+  filtered_data |>
+    select(year, gross) |>
+    group_by(year) |>
+    summarise(
+      count = n(),
+      nr_missing_values = sum(!is.na(gross))
+    ) |>
+    ggplot(aes(x = year)) +
+    geom_line(aes(y = nr_missing_values), col = "red") +
+    geom_line(aes(y = count), col = "blue") +
+    scale_x_continuous(breaks = seq(1915, 2025, 6)) +
+    labs(
+      title = "The Number of Featured Movies Has Increased\nOver The Years",
+      subtitle = "A significant drop, however, can be observed around the time of Covid-19 (2020-2022)",
+      y = "Number of Featured Films\nNumber of Featured Films With Reported Gross"
+    ) +
+    annotate("text", x = 1915, y = 350, vjust = "bottom", hjust = "left",
+             label = "Total", color = "blue") +
+    annotate("text", x = 1915, y = 320, vjust = "bottom", hjust = "left",
+             label = "Incl. Gross", color = "red") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+})
+
+plotOutput("moviesPlot")
+
+```
+
+
+How many diamonds of each cut quality do we have in the data set?
+
+#```{r}
+#ggplot(diamonds, aes(cut)) + geom_bar()
+#```
+
+### Colour
+
+This graph is interacive!
+
+```{r}
+ggplot(diamonds, aes(color)) + geom_bar()
+plotly::ggplotly()
+```
+
+### Carat
+
+Here we can manually adjust plotting options using shiny:
+
+```{r}
+sliderInput("binwidth", label = "Width of bins:",
+            min = 0.05, max = 1, value = 0.2, step = 0.05)
+```
+
+```{r}
+renderPlot({
+    ggplot(diamonds, aes(carat)) + geom_histogram(binwidth = input$binwidth)
+})
+```
+
+## Column
+
+### 
+
+```{r}
+valueBox(max(diamonds$price), caption = "Highest price")
+```
+
+### 
+
+```{r}
+valueBox(diamonds$cut |> fct_infreq() |> levels() |> head(1), 
+         caption = "Most common cut")
+```
+
+### The largest diamonds
+
+```{r}
+diamonds %>%
+  arrange(desc(carat)) %>%
+  head(100) %>%
+  select(carat, cut, price) %>%
+  DT::datatable()
+```
+
+# A map
+
+This map has nothing to do with diamonds.
+
+```{r}
+library(leaflet)
+leaflet() |>
+  setView(6.6323, 46.5197, zoom = 13) |> 
+  addTiles() |>
+  addMarkers(6.58443210712653, 46.52254230211193, popup = "Internef") 
+```
+
+

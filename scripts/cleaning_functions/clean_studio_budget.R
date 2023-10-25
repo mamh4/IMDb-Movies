@@ -1,21 +1,43 @@
 library(stringr)
-# Clean up Studio
+
+
+# This script runs some regex and algorithms to clean up the studio and budget columns retrieved from web scrapping on
+# Wikipedia. For Studio after implementing a series of regex it proved best to arrange the studio by charachter size
+# and replace existing "relatively small studio name" with a larger one. i.e Netflix will replace Netflix + country.
+# It is not the most robust but after trying different regex and algorithms it provided the best data.
+
+
+# Regarding budget, we exclude non-US$ as it poses a larger challenge for converting currency and identifying currency
+# to begin with. Luckily Wikipedia is consistent when providing budget info in US$ by often stating $ at the beginning.
+# For other currencies it is sometimes symbolic and sometime abbreviated. 
+
+
+# Variable names here are irrelevant as they are only used to go from one version to a cleaner one.
+
+
+
 remove_references <- function(text) {
   # Remove everything between "[" and "]"
   cleaned_text <- gsub("\\[[^]]*\\]", "", text)
   return(cleaned_text)
 }
 
-a <- remove_references(studio_and_budget$studio) |> gsub("^\\n", "", x = _) |> gsub("\\n", ", ", x = _)
-studio_and_budget$studio <- a
+orig_studio <- studio_and_budget$studio
 
-studio_and_budget_unique <- studio_and_budget |> arrange(nchar(studio)) |> select(studio) |>unique()
-studio_and_budget_unique_adjusted <- studio_and_budget |> arrange(nchar(studio)) |> select(studio) |> unique()
+studio_and_budget2 <- studio_and_budget
+a <- remove_references(studio_and_budget2$studio) |> gsub("^\\n", "", x = _) |> gsub("\\n", ", ", x = _)
+
+studio_and_budget2$studio <- a
+
+studio_and_budget_unique <- studio_and_budget2 |> arrange(nchar(studio)) |> select(studio) |>unique()
+studio_and_budget_unique_adjusted <- studio_and_budget2 |> arrange(nchar(studio)) |> select(studio) |> unique()
+
 
 for(i in 1:nrow(studio_and_budget_unique_adjusted)) {
   pattern = studio_and_budget_unique_adjusted[[i, "studio"]]
   for (k in i:nrow(studio_and_budget_unique_adjusted)) {
-    print(paste("outer loop", i, "inner loop", k))
+    #print(paste("outer loop", i, "inner loop", k))
+    if(i==nrow(studio_and_budget_unique_adjusted)){break}#prevent warning with grepl when k is the end
     if (grepl(pattern, x = studio_and_budget_unique_adjusted[[k, "studio"]])) {
       studio_and_budget_unique_adjusted[[k, "studio"]] <- pattern
     }
@@ -24,23 +46,26 @@ for(i in 1:nrow(studio_and_budget_unique_adjusted)) {
 join_table <- tibble(studio_key = studio_and_budget_unique$studio,
                      studio = studio_and_budget_unique_adjusted)
 
-studio_and_budget2 <- studio_and_budget |> left_join(join_table, join_by(studio_key =studio))
-studio_and_budget$studio <- studio_and_budget2$studio.y$studio
+studio_and_budget2 <- studio_and_budget |> left_join(join_table, join_by(studio ==studio_key))
+#studio_and_budget$studio <- studio_and_budget2$studio.y$studio
 
-studio_and_budget_cleaned <- studio_and_budget_cleaned |>
-  mutate(studio = if_else(studio=='20th Century-Fox', '20th Century Fox', studio),
+studio_and_budget_cleaned <- studio_and_budget2 |> select(-studio.y) |> 
+  mutate(studio = studio_and_budget2$studio.y$studio,
+         studio = if_else(studio=='20th Century-Fox', '20th Century Fox', studio),
          studio = if_else(studio == 'Buena Vista International' | studio == 'Buena Vista Distribution' |
                             studio == 'Buena Vista Film Distribution',
                           'Buena Vista Pictures', studio),
          studio = if_else(studio == "Pathe Distribution", "Pathé", studio),
-         studio = if_else(grepl("AFMD",studio),"AFMD",studio)
+         studio = if_else(grepl("AFMD",studio),"AFMD",studio),
+         studio = if_else(studio=="Universal International" | studio=="Universal-International" | studio=="Universal Studios",
+                          "Universal Pictures",studio)
          )
 
 # Clean up Budget
 
-orig_budget <- studio_and_budget$budget
+orig_budget <- studio_and_budget_cleaned$budget
   
-a <- remove_references(studio_and_budget$budget)
+a <- remove_references(studio_and_budget_cleaned$budget)
 
 #exclude everything after opening brackets or or TODO
 
@@ -50,8 +75,8 @@ c <- gsub("\\s(or|to|and).*$", "", b)
 
 d <-  str_extract(c, "\\$.*") #take everything from $ until end (Drop Budget figures using different currencies)
 
-e <- str_replace(d, "[-−–—–].*?\\d+(,\\d+)?\\s", " ")#if there is "-" followed by some number, remove them
-f <- sub("[-−–—–].*", "", e)#remaining cases $40-"$"50
+e <- str_replace(d, "[-−–—–].*?\\d+(,\\d+)?\\s", " ") #if there is "-" followed by some number, remove them
+f <- str_replace(pattern = "[-−–—–].*", replacement = "", e)#remaining cases $40-"$"50
 
 # cases where million pops up twice: unique(g[str_count(g, pattern = "million")>1]), remove either occurance
 
@@ -127,30 +152,34 @@ convert_to_numeric <- function(text_array) {
 k <- convert_to_numeric(j)
 
 
-studio_and_budget$budget <- k
+studio_and_budget_cleaned$budget <- k
 
 
 
-if(nrow(studio_and_budget)>=10000) {
+if(nrow(studio_and_budget_cleaned)>=10000) {
   #Manual adjustments: boundary cases range is from thousand to million. i.e 800,000- 1 million
-  studio_and_budget$budget[2967] <- studio_and_budget$budget[2967] / 1e6
-  studio_and_budget$budget[85] <- studio_and_budget$budget[85] / 1e6
+  studio_and_budget_cleaned$budget[2967] <- studio_and_budget_cleaned$budget[2967] / 1e6
+  studio_and_budget_cleaned$budget[85] <- studio_and_budget_cleaned$budget[85] / 1e6
   
   #Manual Adjustment thousand entry in text instead of million
-  studio_and_budget$budget[8440] <- studio_and_budget$budget[8440] * 1e4
+  studio_and_budget_cleaned$budget[8440] <- studio_and_budget_cleaned$budget[8440] * 1e4
   
   
-  studio_and_budget$budget[4496] <- NA
+  studio_and_budget_cleaned$budget[4496] <- NA
   #d[2967]
   #d[85]
 }
 
-
-studio_and_budget$orig_budget <- orig_budget
+studio_and_budget_cleaned$orig_studio <- orig_studio
+studio_and_budget_cleaned$orig_budget <- orig_budget
 
 
 # clean-up memory
 rm(
+  orig_studio,
+  studio_and_budget_unique,
+  studio_and_budget_unique_adjusted,
+  studio_and_budget2,
   a,
   b,
   c,
@@ -168,35 +197,3 @@ rm(
   remove_references,
   replace_excess_million
 )
-
-
-
-
-# convert_to_numeric <- function(text) {
-#   
-#   cleaned_text <- gsub("[^0-9.,]", "", text)
-#   
-#   # Replace any commas inside numbers with periods
-#   cleaned_text <- gsub("(?<=\\d),(?=\\d)", ".", cleaned_text, perl = TRUE)
-#   
-#   # Replace periods only if they are followed by three digits (for thousands separators)
-#   cleaned_text <- gsub("\\.(?=\\d{3})", "", cleaned_text, perl = TRUE)
-#   
-#   # Replace any remaining commas with empty strings
-#   cleaned_text <- gsub(",", "", cleaned_text)
-#   
-#   # Convert to numeric
-#   numeric_value <- as.numeric(cleaned_text)
-#   
-#   
-#   if (grepl("million", tolower(text))) {
-#     numeric_value <- numeric_value * 1e6
-#   }
-#   
-#   return(numeric_value)
-# }
-# 
-# k <- sapply(j, convert_to_numeric)
-# 
-# 
-# studio_and_budget$budget <- k

@@ -22,7 +22,8 @@ As of October 21, 2023, the data set on featured movies comprises a total of 247
 
 ```{r cut-off-decision}
 # Scrape movies
-#source("../scripts/scrapping_functions/scrape_IMDb_movies.R")
+source("../scripts/scrapping_functions/scrape_movies.R")
+movies <- scrape_movies(n=25,10000,TRUE) #TO BE REMOVED
 #movies <- scrape_movies(n_start=1, n_end=10,min_number_votes = 10000, print_progress = FALSE, return_next_url = FALSE, start_url = 'empty')
 load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
 
@@ -79,7 +80,10 @@ Now that we decided on the cut-off of 10k we end up with 10,555 movie titles whi
 
 
 ```{r data-enrichment, echo = FALSE, message = FALSE}
-# Read other data
+# Read other data | You can replace the loading with reading function or sourcing to run on a new data set! For instance try the movies / dob / studio and budget enrichment functions! Note however that some of those functions (scraping/cleaning) may take quite long but usually they are pretty quick for low data such as 25 movies or so.
+# Code replacements are commented just above their respective functions.
+
+
 
 movies <- movies |>
   filter(votes>=10000)
@@ -92,16 +96,16 @@ source("../scripts/scrapping_functions/enrich_studio_and_budget.R")
 
 # Load and aggregate data switch load with functions to try on new data set
 
-#dob_table_stars <- find_dob( movies |> select(stars) |>
+#dob_table_stars_cleaned <- find_dob( movies |> select(stars) |>
 #                       separate_rows(stars, sep = ",\\s*")|>
-#                       unique())
-load("../data/scrapped_data/dob_stars10k.Rdata")#data name dob_table_stars
+#                       unique()) |> mutate(dob_stars = ymd(dob))
+load("../data/cleaned_data/dob_stars10k_cleaned.Rdata")
 
 
-#dob_table_directors <- find_dob( movies |> select(directors) |>
-#                       separate_rows(directors, sep = ",\\s*")
-#                       |> unique())
-load("../data/scrapped_data/dob_directors10k.Rdata")#data name dob_table_directors
+#dob_table_directors_cleaned <- find_dob( movies |> select(directors) |>
+#                        separate_rows(directors, sep = ",\\s*")|> 
+#                        unique()) |> mutate(dob_directors = ymd(dob))
+load("../data/cleaned_data/dob_directors10k_cleaned.Rdata")
 
 
 #studio_and_budget <- enrich_studio_and_budget(movies[,c("title","year")])
@@ -110,10 +114,6 @@ load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_dir
 
 #source("../scripts/cleaning_functions/clean_studio_budget.R") #Cleaning the studio takes about 1.5 hours for >10k votes
 load("../data/cleaned_data/studio_and_budget10k_cleaned3.Rdata")
-
-#source("../scripts/cleaning_functions/clean_dob.R")
-load("../data/cleaned_data/dob_stars10k_cleaned.Rdata")
-load("../data/cleaned_data/dob_directors10k_cleaned.Rdata")
 
 
 # Apparently the dot operator needs %>% not yet implemented in base r using |>
@@ -155,6 +155,7 @@ movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pict
 ```{r motivation-cpi-population}
 a <- ggplot(population_estimates, aes(year, population)) +
   geom_line() +
+  geom_point(aes(x=x,y=y),data = data.frame(x=seq(1900,2025,10), y= population$population))+
   scale_y_continuous(labels = scales::comma) +
   labs(title = "Population and CPI Trend Upwards Over Time", x = "Year", y = "Population") +
   theme_minimal()
@@ -168,7 +169,7 @@ b <- ggplot(CPI,aes(Year, CPI))+
 (a | b)
 
 ```
-Since the data is spanning years since the 1900s we thought that including population and Consumer Price Index is crucial for drawing meaningful conclusions.
+Since the data is spanning years since the 1900s we thought that including population and Consumer Price Index is crucial for drawing meaningful conclusions. The points on the population plot represent the census years.
 
 
 ## Motivation for data transformation
@@ -198,7 +199,7 @@ movies$certificate_adjusted <- case_when(   # Check Example below
 ))
 
 # Example:
-# Need to report to Posit, case when returns warning NAs introduced by coercion but this is not true!
+# Need to report to Posit, 'case when' returns warning NAs introduced by coercion but this is not true!
 # d <- c("a","b","0")
 # a <- case_when(
 #  d=="a"~1,

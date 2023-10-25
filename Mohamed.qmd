@@ -62,10 +62,10 @@ movies |> distinct(stars,gross,dob_stars,gross_CPI_adjusted) |>
 # Studio
 ```{r}
 
-
+# Crazy Netflix
 movies |> distinct(title,studio,year) |>
   group_by(studio,year) |>
-  summarise(count = sum(!is.na(title))) |>
+  reframe(count = sum(!is.na(title))) |>
   filter(!(studio==""|studio=="Studio"|is.na(studio)),count>10) |>
   ggplot(aes(x=year,y=count,col=factor(studio)))+
   geom_line()
@@ -97,6 +97,24 @@ movies |>
   ggplot(aes(x=year,y=count,col=studio))+
     geom_line()
 
+#check avg gross per year maybe some studios are improving
+# To check studio's avg ratings per year
+
+# Harder to please the audience
+movies |> distinct(year,studio,rating)|>
+  group_by(studio,year)|>
+  reframe(mean_rating = mean(rating)) |>
+  right_join(movies |>
+    distinct(studio, gross_CPI_adjusted) |>
+    group_by(studio) |>
+    summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+    arrange(desc(gross_CPI_adjusted)) |>
+    filter(!is.na(studio)) |>
+    dplyr::slice(1:20) |>
+    select(studio),join_by(studio)) |>
+  ggplot(aes(x=year,y=mean_rating,col=factor(studio)))+
+  geom_line()
+
 
 ```
 
@@ -121,6 +139,43 @@ movies |> distinct(title,year,studio,gross_CPI_adjusted) |>
   coord_flip()
 
 
+movies |> distinct(title,year,studio,gross_CPI_adjusted) |>
+  group_by(studio) |>
+  summarise(gross_CPI_adjusted = mean(gross_CPI_adjusted,na.rm = T)) |>
+  filter(!is.na(studio)) |> ungroup() |>
+  left_join(movies |> distinct(title,rating,studio) |>
+    arrange(desc(rating)) |>
+    group_by(studio) |>
+    summarise(best_title = first(title)),join_by(studio)) |>
+  arrange(desc(gross_CPI_adjusted)) |>
+  slice(1:20) |> 
+  ggplot(aes(x=fct_reorder(studio,gross_CPI_adjusted),y=gross_CPI_adjusted))+
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = best_title, vjust = 0),angle = 0, hjust = 0,size=4)+
+  theme_minimal()+
+  #scale_y_continuous(labels = scales::comma, limits = c(0,120e9))+
+  labs(title = "")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))+
+  coord_flip()
+
+movies |> distinct(title,year,studio,gross_CPI_adjusted,budget_CPI_adjusted) |>
+  group_by(studio) |>
+  summarise(profitability = sum((gross_CPI_adjusted-budget_CPI_adjusted)/budget_CPI_adjusted,na.rm = T)) |>
+  filter(!is.na(studio)) |> ungroup() |>
+  #left_join(movies |> distinct(title,rating,studio) |>
+  #  arrange(desc(rating)) |>
+  #  group_by(studio) |>
+  #  summarise(best_title = first(title)),join_by(studio)) |>
+  arrange(desc(profitability)) |>
+  dplyr::slice(1:20) |> 
+  ggplot(aes(x=fct_reorder(studio,profitability),y=profitability))+
+  geom_bar(stat = "identity") +
+  #geom_text(aes(label = best_title, vjust = 0),angle = 0, hjust = 0,size=4)+
+  theme_minimal()+
+  #scale_y_continuous(labels = scales::comma, limits = c(0,120e9))+
+  labs(title = "")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))+
+  coord_flip()
 
 ```
 
@@ -136,7 +191,7 @@ movies |> distinct(studio,year,title) |>
                                       summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
                                       arrange(desc(gross_CPI_adjusted)) |>
                                       filter(!is.na(studio)) |>
-                                      slice(1:5) |>
+                                      slice(1:7) |>
                                       select(studio) |> unlist()), studio,"Other"))|>
   ggplot(aes(x=year, fill=factor(studio)))+
   geom_bar(position = "fill")+
@@ -159,7 +214,7 @@ movies |> distinct(studio,year,title,.keep_all = T) |>
                                         summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
                                         arrange(desc(gross_CPI_adjusted)) |>
                                         filter(!is.na(studio)) |>
-                                        slice(1:7) |>
+                                        dplyr::slice(1:7) |>
                                         select(studio) |> unlist()), studio,"Other"))|>
   ggplot(aes(x=year, y=gross_CPI_adjusted,fill=factor(studio)))+
   geom_bar(stat = "identity",position = "fill")+
@@ -167,6 +222,78 @@ movies |> distinct(studio,year,title,.keep_all = T) |>
        subtitle = "Despite the few movies produced by Buena Vista, it maintains spot of top\nGrossing Studios",
        y="Proportion of Movies Produced")+
   theme_minimal()
+
+```
+
+# Model
+```{r}
+
+model_set <- movies |> 
+  distinct(title,year,dob_directors,dob_stars,certificate_adjusted,run_time,genre,gross_CPI_adjusted,budget_CPI_adjusted,
+           studio) |>
+  mutate(stars_age = year-year(dob_stars),
+         directors_age = year-year(dob_directors))|>
+  filter(stars_age>0&stars_age<100,directors_age>0&directors_age<100) |>
+  group_by(title) |>
+  mutate(stars_avg_age = mean(stars_age,na.rm = T),
+         directors_avg_age = year-year(dob_directors)) |>
+  ungroup() |>
+  select(-dob_stars,-stars_age,-dob_directors,-directors_age) |>
+  distinct() |>
+  filter(!is.na(gross_CPI_adjusted-budget_CPI_adjusted)) |>
+  mutate(is_successful = if_else(gross_CPI_adjusted-budget_CPI_adjusted>0,1,0) |> factor(),
+         certificate_adjusted = if_else(is.na(certificate_adjusted),0,certificate_adjusted),
+         studio = factor(studio),
+         genre = factor(genre)) |>
+  select(-gross_CPI_adjusted,-year,-title)
+
+model_set <- model_set[complete.cases(model_set),]
+
+
+model_glm <- glm(is_successful ~ ., data = model_set, family = binomial)
+broom::glance(model_glm)
+broom::tidy(model_glm)
+
+library("ROCR")
+library("caret")
+
+
+## cross validated model
+set.seed(123)  # Set a random seed for reproducibility
+folds <- createFolds(model_set$is_successful, k = 10)
+
+ctrl <- trainControl(method = "cv", number = 10, index = folds, savePredictions = "final")
+
+
+model_cross_validated <- train(is_successful ~ ., data = model_set, method = "glm", trControl = ctrl, family = binomial)
+summary(model_cross_validated)#aic 1783 + accuracy 85% 10fold cross validated 10 order of magnitude improvement to just glm
+
+
+
+## Random forest
+library(randomForest)
+
+set.seed(123)  # For reproducibility
+sample_indices <- sample(nrow(model_set), nrow(model_set) * 0.7)
+train_data <- model_set[sample_indices, ]
+test_data <- model_set[-sample_indices, ]
+
+response <- "is_successful"
+predictors <- c("run_time", "genre", "certificate_adjusted")
+
+rf_model <- randomForest(
+  x = train_data[, predictors],
+  y = train_data$is_successful,
+  ntree = 100,  # Number of trees in the forest
+  mtry = sqrt(length(predictors)),  # Number of features to consider at each split
+  importance = TRUE  # Calculate variable importance
+)
+
+predictions <- predict(rf_model, newdata = test_data)
+
+# Calculate accuracy
+accuracy <- mean(predictions == test_data$is_successful)
+cat("Accuracy:", accuracy, "\n")
 
 ```
 
