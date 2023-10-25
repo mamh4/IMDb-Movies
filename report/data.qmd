@@ -182,6 +182,7 @@ movies$gross_CPI_adjusted <- (movies$gross / movies$CPI)*todays_CPI
 movies$budget_CPI_adjusted <- (movies$budget / movies$CPI)*todays_CPI
 ticket_price_23 <- 11.15
 movies$nr_tickets_sold <- movies$gross_CPI_adjusted / ticket_price_23
+movies$profit_CPI_adjusted <- movies$gross_CPI_adjusted - movies$budget_CPI_adjusted
 
 suppressWarnings( # Need to report to Posit, case when returns warning NAs introduced by coercion but this is not true!
 movies$certificate_adjusted <- case_when(   # Check Example below
@@ -207,6 +208,8 @@ movies$certificate_adjusted <- case_when(   # Check Example below
 
 
 ```
+Need to mention criticism with the profit metric.
+
 
 There are 5 "Un Rated" movies and 7 "Not Rated" movies. That we set to NAs. Interstingly the certificate "R" has changed from the age of 16 to 17 post 1970.
 
