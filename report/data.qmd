@@ -23,7 +23,7 @@ As of October 21, 2023, the data set on featured movies comprises a total of 247
 ```{r cut-off-decision}
 # Scrape movies
 source("../scripts/scrapping_functions/scrape_movies.R")
-movies <- scrape_movies(n=25,10000,TRUE) #TO BE REMOVED
+#movies <- scrape_movies(n=25,10000,TRUE) #TO BE REMOVED
 #movies <- scrape_movies(n_start=1, n_end=10,min_number_votes = 10000, print_progress = FALSE, return_next_url = FALSE, start_url = 'empty')
 load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
 
@@ -113,7 +113,7 @@ load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_dir
 
 
 #source("../scripts/cleaning_functions/clean_studio_budget.R") #Cleaning the studio takes about 1.5 hours for >10k votes
-load("../data/cleaned_data/studio_and_budget10k_cleaned3.Rdata")
+load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
 
 
 # Apparently the dot operator needs %>% not yet implemented in base r using |>
