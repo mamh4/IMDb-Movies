@@ -1,88 +1,146 @@
 ---
 title: "Diamonds distribution dashboard"
-output: flexdashboard::flex_dashboard
+output: 
+  flexdashboard::flex_dashboard:
 runtime: shiny
 ---
 
 ```{r setup, include = FALSE}
 library(flexdashboard) 
 library(tidyverse)
+library(mgcv)
+library(DT)
 knitr::opts_chunk$set(fig.width = 5)
 ```
 
 # Statistics
 
-## Column 1 {.tabset}
 
-### Movies
-
-```{r}
+```{r data-loading-chunk}
 
 load("../data/cleaned_data/full_IMDb_Scrape.Rdata")#data name movies
 
 movies <- movies |>
   filter(votes>=10000)
 
-movies_collapsed <- movies[1:11] |>
-  group_by_at(vars(-directors,-stars,-genre)) |>
-  summarise(
-    directors = paste(directors, collapse = ', '),
-    stars = paste(stars, collapse = ', '),
-    genre = paste(genre, collapse = ', '),
-    .groups = "drop") |>
-  ungroup()
+# Source relevant scripts
+source("../scripts/scrapping_functions/enrich_dob.R")
+source("../scripts/scrapping_functions/enrich_studio_and_budget.R")
 
-# Define genres for the filter
-genres <- unique(movies_collapsed$genre)
 
-selectInput("genreFilter", "Select Genre:", choices = c("All", genres), selected = "All")
+# Load and aggregate data switch load with functions to try on new data set
 
+#dob_table_stars_cleaned <- find_dob( movies |> select(stars) |>
+#                       separate_rows(stars, sep = ",\\s*")|>
+#                       unique()) |> mutate(dob_stars = ymd(dob))
+load("../data/cleaned_data/dob_stars10k_cleaned.Rdata")
+
+
+#dob_table_directors_cleaned <- find_dob( movies |> select(directors) |>
+#                        separate_rows(directors, sep = ",\\s*")|> 
+#                        unique()) |> mutate(dob_directors = ymd(dob))
+load("../data/cleaned_data/dob_directors10k_cleaned.Rdata")
+
+
+#studio_and_budget <- enrich_studio_and_budget(movies[,c("title","year")])
+load("../data/scrapped_data/studio_and_budget10k.Rdata")#data name dob_table_directors
+
+
+#source("../scripts/cleaning_functions/clean_studio_budget.R") #Cleaning the studio takes about 1.5 hours for >10k votes
+load("../data/cleaned_data/studio_and_budget10k_cleaned.Rdata")
+
+
+# Apparently the dot operator needs %>% not yet implemented in base r using |>
+CPI <- read.csv("../data/cleaned_data/inflation.csv") %>%
+    mutate(CPI = rowMeans(.[,3:14],na.rm=T)) %>%
+    select(Year,CPI) %>%
+    rbind(data.frame(Year = 2023,CPI = 302.340)) #US Federal Reserve Economic Data
+
+# integrate population data
+population <- read.csv("../data/cleaned_data/population.csv")
+population_gam <- gam(population~s(census_year),data = population)
+predictions <- predict(object = population_gam, newdata = data.frame(census_year = seq(1900, 2023, 1)))
+population_estimates <- data.frame(year = seq(1900, 2023, 1),
+                                   population = predictions)
+
+
+#aggregate data + make it TIDY (Split per per Genre, Actor, Director and Studio)
+#Warning is due two films "Beast 2022" when doing a left join, we adjust them afterwards.
+suppressWarnings({
+movies <- movies |> 
+  left_join(CPI,join_by(year==Year)) |>
+  left_join(studio_and_budget_cleaned[1:4], join_by(title,year)) |>
+  separate_rows(stars, sep = ",\\s*") |>
+  left_join(dob_table_stars_cleaned[1:2],join_by(stars)) |>
+  separate_rows(directors, sep = ",\\s*") |>
+  left_join(dob_table_directors_cleaned[1:2],join_by(directors)) |>
+  separate_rows(genre, sep = ",\\s*") |>
+  left_join(population_estimates, join_by(year))
+})
+
+# There are two movies named beast from the year 2022.
+movies[movies$title=="Beast" & movies$run_time ==93,"budget"] <- 36e6
+movies[movies$title=="Beast" & movies$run_time ==93,"studio"] <- "Universal Pictures"
+genres <- unique(movies$genre)
+```
+
+## Column 1 {data-width=150}
+
+### Genre Filter {data-height=500}
+
+```{r}
+checkboxGroupInput("genreFilter", "Select Genre:", choices = genres, selected = "All")
+```
+
+
+## Column 2 {.tabset}
+
+### Movies
+
+```{r}
 filtered_movies <- reactive({
-  genre_filter <- input$genreFilter
-  if (genre_filter == "All") {
-    filtered_data <- movies_collapsed
+  selected_genres <- input$genreFilter
+
+  if (length(selected_genres) == 0) { #or if("All" %in% selected_genres) but we want none!
+    # If "All" is selected, show all genres
+    filtered_data <- movies |>
+      distinct(title, year, rating, stars,directors)
   } else {
-    filtered_data <- filter(movies_collapsed, genre == genre_filter)
+    # If specific genres are selected, filter based on those genres
+    filtered_data <- filter(movies |>
+      distinct(title, year, genre, rating, stars,directors), 
+      genre %in% selected_genres)
   }
+
   return(filtered_data)
 })
 
 output$moviesPlot <- renderPlot({
   filtered_data <- filtered_movies()
   filtered_data |>
-    select(year, gross) |>
+    distinct(title,year) |>
     group_by(year) |>
     summarise(
-      count = n(),
-      nr_missing_values = sum(!is.na(gross))
-    ) |>
-    ggplot(aes(x = year)) +
-    geom_line(aes(y = nr_missing_values), col = "red") +
-    geom_line(aes(y = count), col = "blue") +
+      count = n()) |>
+    ggplot(aes(x = year,y=count)) +
+    #geom_line(aes(y = nr_missing_values), col = "red") +
+    geom_line(col = "blue") +
     scale_x_continuous(breaks = seq(1915, 2025, 6)) +
     labs(
-      title = "The Number of Featured Movies Has Increased\nOver The Years",
-      subtitle = "A significant drop, however, can be observed around the time of Covid-19 (2020-2022)",
-      y = "Number of Featured Films\nNumber of Featured Films With Reported Gross"
+      y = "Number of Featured Films"
     ) +
-    annotate("text", x = 1915, y = 350, vjust = "bottom", hjust = "left",
-             label = "Total", color = "blue") +
-    annotate("text", x = 1915, y = 320, vjust = "bottom", hjust = "left",
-             label = "Incl. Gross", color = "red") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    #annotate("text", x = 1915, y = 350, vjust = "bottom", hjust = "left",
+    #         label = "Total", color = "blue") +
+    #annotate("text", x = 1915, y = 320, vjust = "bottom", hjust = "left",
+    #         label = "Incl. Gross", color = "red") +
+    theme_minimal() #+
+    #theme(axis.text.x = element_text(angle = 45, hjust = 1))
 })
 
 plotOutput("moviesPlot")
 
 ```
 
-
-How many diamonds of each cut quality do we have in the data set?
-
-#```{r}
-#ggplot(diamonds, aes(cut)) + geom_bar()
-#```
 
 ### Colour
 
@@ -108,32 +166,110 @@ renderPlot({
 })
 ```
 
-## Column
+## Column 3{data-width=400}
 
-### 
-
-```{r}
-valueBox(max(diamonds$price), caption = "Highest price")
-```
-
-### 
+### The Top Rated Movies
 
 ```{r}
-valueBox(diamonds$cut |> fct_infreq() |> levels() |> head(1), 
-         caption = "Most common cut")
+# output$movies_table <- renderDT({
+#   filtered_data <- filtered_movies()
+#   # Assuming you have a data frame called "filtered_data"
+#   datatable(
+#     filtered_data %>%
+#       distinct(title,year,rating)%>%
+#       arrange(desc(rating)) %>%
+#       head(100) %>%
+#       select(title, year, rating),
+#     options = list(
+#       # Customize datatable options here, e.g., search, paging, etc.
+#       pageLength = 10,
+#       searching = TRUE
+#     )
+#   )
+# })
+# DTOutput("movies_table")
+output$movies_table <- renderDT({
+  filtered_data <- filtered_movies()
+  # Assuming you have a data frame called "filtered_data"
+  datatable(
+    filtered_data %>%
+      distinct(title, year, rating) %>%
+      arrange(desc(rating)) %>%
+      head(100) %>%
+      select(title, year, rating),
+    options = list(
+      pageLength = 10,
+      searching = FALSE, # Remove the search bar
+      lengthChange = FALSE, # Remove the 'Show X entries' dropdown
+      ordering = TRUE, # Remove sorting
+      info = FALSE # Remove table information
+    )
+  )
+})
+DTOutput("movies_table")
+
 ```
 
-### The largest diamonds
+### Famous Actors
 
 ```{r}
-diamonds %>%
-  arrange(desc(carat)) %>%
-  head(100) %>%
-  select(carat, cut, price) %>%
-  DT::datatable()
+
+output$actorsTable <- renderDT({
+  filtered_data <- filtered_movies()
+  # Assuming you have a data frame called "filtered_data"
+  datatable(
+    filtered_data %>%
+      select(stars,rating) %>%
+      group_by(stars)%>%
+      summarise(rating = mean(rating),
+                count = n()) %>% 
+      ungroup() %>%
+      arrange(desc(rating)) %>%
+      head(100) %>%
+      select(stars, count,rating),
+    options = list(
+      pageLength =10,
+      searching = FALSE,
+      lengthChange = FALSE,
+      info = FALSE
+    )
+  )
+})
+DTOutput("actorsTable")
+
 ```
 
-# A map
+
+### Famous Directors
+
+```{r}
+
+output$directorsTable <- renderDT({
+  filtered_data <- filtered_movies()
+  # Assuming you have a data frame called "filtered_data"
+  datatable(
+    filtered_data %>%
+      select(directors,rating) %>%
+      group_by(directors)%>%
+      summarise(rating = mean(rating),
+                count = n()) %>% 
+      ungroup() %>%
+      arrange(desc(rating)) %>%
+      head(100) %>%
+      select(directors, count,rating),
+    options = list(
+      pageLength =10,
+      searching = FALSE,
+      lengthChange = FALSE,
+      info = FALSE
+    )
+  )
+})
+DTOutput("directorsTable")
+
+```
+
+# Recommend Me A Movie! <!---(comment: {data-navmenu=More} to have dropdown called more with page inside)-->
 
 This map has nothing to do with diamonds.
 
