@@ -380,4 +380,3 @@ scrape_movies <- function(n_start=1, n_end=10000,min_number_votes = 1000, print_
 # movies <- movies |> mutate(directors = ifelse(directors=="", NA, directors), stars = ifelse(stars=="", NA, stars)) 
 # 
 # save(movies, file=(file.path("fullIMDbDataCleaned.RData")))
-
