@@ -169,13 +169,16 @@ b <- ggplot(CPI,aes(Year, CPI))+
 (a | b)
 
 ```
-Since the data is spanning years since the 1900s we thought that including population and Consumer Price Index is crucial for drawing meaningful conclusions. The points on the population plot represent the census years.
+Since the data is spanning years since the 1900s we thought that including population and Consumer Price Index is crucial for drawing meaningful conclusions. The points on the population plot represent the years where a census was conducted.
 
 
 ## Motivation for data transformation
 To relate our research question as close as possible to the data set we have we construct a few estimates, For instance to answer to question How many views a movie received we can approximate it by number of tickets sold and proportion of population who watched the movie.
 
 Furthermore, we notice discrepancy in the certificate column for instance PG meant that viewers of the age of XX could watch the movie with their parents, but in 19XX this changed to XX of age. Therefore we assign the column factor levels that are age dependent.
+
+We also decide to include a profit estimate by subtracting the budget from gross (CPI adjusted). This is rather naive since the budget figures do not include marketing costs which is a significant amount. In contrast, gross figures are reported predominantly from the US market and would not include merchandise which was a significant revenue stream for Star Wars.
+
 ```{r transformation-chunk, echo = FALSE, message = FALSE}
 #integrate transformations of columns into data set.
 todays_CPI <- CPI[CPI$Year==2023,"CPI"]
@@ -207,11 +210,5 @@ movies$certificate_adjusted <- case_when(   # Check Example below
 #  TRUE~as.numeric(d)
 # )
 
-
 ```
-Need to mention criticism with the profit metric.
-
-
-There are 5 "Un Rated" movies and 7 "Not Rated" movies. That we set to NAs. Interstingly the certificate "R" has changed from the age of 16 to 17 post 1970.
-
 

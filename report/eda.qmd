@@ -8,40 +8,38 @@ source(here::here("scripts/setup.R"))
 
 ### IMDb Movies Subset
 
-For the Movies exceeding 10,000 votes the only variables identified with missing values
-
-```{r missing-values-imdb}
-movies_collapsed <- movies[1:11] |>
-  group_by_at(vars(-directors,-stars,-genre)) |>
-  summarise(
-    directors = paste(directors, collapse = ', '),
-    stars = paste(stars, collapse = ', '),
-    genre = paste(genre, collapse = ', '),
-    .groups = "drop") |>
-  ungroup()
-
-data.frame(column = names(movies_collapsed),
-            nr_missing_values = sapply(movies_collapsed, 
-                                       function(x) sum(is.na(x)))) |>
-  ggplot(aes(x=fct_reorder(column,desc(nr_missing_values)),y=nr_missing_values))+
-  geom_bar(stat = "identity") +
-  scale_y_continuous(limits = c(0,11000))+
-  geom_hline(yintercept = nrow(movies_collapsed),linetype="dashed")+
-  annotate("text", x = 1, y = nrow(movies_collapsed), vjust = "top", hjust = "left",
-           label = "Data set size: 10,555")+
-  labs(title = "Around 1/3 of Movies with Number of Votes Greater Than 10k Are\nMissing Gross Amounts",
-       x="Column Name",
-       y="Number of Missing Entries")+
-  theme_minimal()
+```{r missing-values-imdb, echo=FALSE, message=FALSE}
+# movies_collapsed <- movies[1:11] |>
+#   group_by_at(vars(-directors,-stars,-genre)) |>
+#   summarise(
+#     directors = paste(directors, collapse = ', '),
+#     stars = paste(stars, collapse = ', '),
+#     genre = paste(genre, collapse = ', '),
+#     .groups = "drop") |>
+#   ungroup()
+# 
+# data.frame(column = names(movies_collapsed),
+#             nr_missing_values = sapply(movies_collapsed, 
+#                                        function(x) sum(is.na(x)))) |>
+#   ggplot(aes(x=fct_reorder(column,desc(nr_missing_values)),y=nr_missing_values))+
+#   geom_bar(stat = "identity") +
+#   scale_y_continuous(limits = c(0,11000))+
+#   geom_hline(yintercept = nrow(movies_collapsed),linetype="dashed")+
+#   annotate("text", x = 1, y = nrow(movies_collapsed), vjust = "top", hjust = "left",
+#            label = "Data set size: 10,555")+
+#   labs(title = "Around 1/3 of Movies with Number of Votes Greater Than 10k Are\nMissing Gross Amounts",
+#        x="Column Name",
+#        y="Number of Missing Entries")+
+#   theme_minimal()
 
 ```
 
-We notice that in the original movies subset, we have missing values certificate, gross and metascore. Worth mentioning that the Genre, Stars and Directors entries contain comma separated values. Although they do not show missing values it is possible that the stars column is missing key actors or that a genre is missing.
+When focusing on the Movies exceeding 10,000 votes we find that the only variables identified with missing values were Certificate (3,394) followed by gross (3,124) followed by meta score (2,177). Worth mentioning that the Genre, Stars and Directors entries contain comma separated values. Although they do not show missing values it is possible that the stars, directors or genre column key figures e.g. an actor or a genre is missing.
 
-Of the three variables gross is the most crucial to our research inquiry, we dive deeper on it
+Among the three variables, "gross" holds the utmost significance in our research investigation, prompting us to delve deeper into its details.
 
 ```{r missing-values-gross}
-movies_collapsed |> select(year,gross) |> 
+movies |> distinct(year,title,run_time,gross) |> 
   group_by(year) |>
   summarise(count = n(),
             nr_missing_values = sum(!is.na(gross))) |>
@@ -68,24 +66,24 @@ We first observe that the Number of Featured movies has increased over the past 
 
 ### Studio And Budget Data set
 
-```{r studio-budget-missing-values}
-data.frame(column = names(studio_and_budget),
-            nr_missing_values = sapply(studio_and_budget, 
-                                       function(x) sum(is.na(x)))) |>
-  ggplot(aes(x=fct_reorder(column,desc(nr_missing_values)),y=nr_missing_values))+
-  geom_bar(stat = "identity") +
-  scale_y_continuous(limits = c(0,11000), breaks = seq(0,11000,2000))+
-  geom_hline(yintercept = nrow(movies_collapsed),linetype="dashed")+
-  annotate("text", x = 1, y = nrow(movies_collapsed), vjust = "top", hjust = "left",
-           label = "Data set size: 10,555")+
-  labs(title = "Around 1/3 of Movies with Number of Votes Greater Than 10k Are Missing\nBudget Amounts",
-       y="Number of Missing Entries",
-       x="Column Name")+
-  theme_minimal()
+```{r studio-budget-missing-values, echo=FALSE, message=FALSE}
+# data.frame(column = names(studio_and_budget),
+#             nr_missing_values = sapply(studio_and_budget, 
+#                                        function(x) sum(is.na(x)))) |>
+#   ggplot(aes(x=fct_reorder(column,desc(nr_missing_values)),y=nr_missing_values))+
+#   geom_bar(stat = "identity") +
+#   scale_y_continuous(limits = c(0,11000), breaks = seq(0,11000,2000))+
+#   geom_hline(yintercept = nrow(movies_collapsed),linetype="dashed")+
+#   annotate("text", x = 1, y = nrow(movies_collapsed), vjust = "top", hjust = "left",
+#            label = "Data set size: 10,555")+
+#   labs(title = "Around 1/3 of Movies with Number of Votes Greater Than 10k Are Missing\nBudget Amounts",
+#        y="Number of Missing Entries",
+#        x="Column Name")+
+#   theme_minimal()
 
 ```
 
-Out of 10,555 entries we miss around 1/3 of the budget values. This is slightly worse when compared to the scrapped information stored in the column "budget_orig". The reason is that we decided to drop gross amounts that are reported in non-US\$ currency for the sake of fair comparison. Converting non US\$ currency poses difficulties in two-fold:
+For Budget and Studio data set, out of 10,555 entries we identify budget missing entries of (3,537). This is slightly worse when compared to the scrapped information stored in the column "budget_orig"(2,663). The reason is that we decided to drop gross amounts that are reported in non-US\$ currency for the sake of fair comparison. Converting non US\$ currency poses difficulties in two-fold:
 
 -   Identifying the reporting currency as the currency can be reported using symbol, text or mixture of both.
 
@@ -98,6 +96,8 @@ We managed to obtain around 9500 of the studios using Wikipedia. Having non-comp
 -   Missing the Wikipedia page of the Movie.
 
 -   Unable to find the Wikipedia page of the Movie.
+
+It's worth mentioning that more often than not, more than one studio is involved in the production of a single movie. We relied on the distributor(s) as reference.
 
 ### Date Of Birth Data sets
 
@@ -138,7 +138,11 @@ movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
+```
+As expected, older movies tend to do better in terms of gross when we adjust for the consumer price index to today's prices. Highlighted in green however we see a somewhat bizarre behavior. We take a closer look!
 
+
+```{r bizzarre-behaviour}
 movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
   group_by(year) |>
   summarise(total_gross = sum(gross,na.rm = T),
@@ -160,8 +164,8 @@ movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
        y = "Total Gross\nTotal CPI Adjusted Gross")+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
-
 ```
+After a closer look we see that those spikes in CPI adjusted gross were in the years 1937, 1939, 1940 and 1942. Let's take a closer look at what happened these years.
 
 #### 1937,39,40,42 Analysis
 
@@ -242,8 +246,28 @@ movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
   mutate(ordering = - year + (gross_CPI_adjusted /(gross_CPI_adjusted+1)))|>
   ggplot(aes(x=fct_reorder(title,desc(ordering)), y=gross_CPI_adjusted,gross))+
   geom_bar(stat = "identity") +
-  scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
+  scale_y_continuous(limits = c(0, 45e8),
+    breaks = seq(0, 45e8, by = 1e9),
+    labels = c("0", "1b", "2b", "3b", "4b"))+
   facet_grid(. ~ factor(year), scales="free_x", space="free_x")+
+  labs(title = "The Bizarre Behaviour at the Years 1937, 1939, 1940\nand 1942 Can be Explained By a Handful of Movies",
+       x="",
+       y="CPI Adjusted Gross Amount")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust=1,vjust=0.25))
+  #theme(panel.spacing=unit(0,"pt"), 
+  #      panel.border=element_rect(colour="grey50", fill=NA))
+
+movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
+  filter(year %in% c(1937,1939,1940,1942),!is.na(gross)|gross>9e7) |>
+  mutate(ordering = - year + (gross_CPI_adjusted /(gross_CPI_adjusted+1)))|>
+  ggplot(aes(x=fct_reorder(title,desc(ordering)), y=gross_CPI_adjusted,gross, fill = factor(year)))+
+  geom_bar(stat = "identity") +
+  scale_y_continuous(
+    limits = c(0, 45e8),
+    breaks = seq(0, 45e8, by = 1e9),
+    labels = c("0B", "1B", "2B", "3B", "4B"))+
+  #facet_grid(. ~ factor(year), scales="free_x", space="free_x")+
   labs(title = "The Bizarre Behaviour at the Years 1937, 1939, 1940\nand 1942 Can be Explained By a Handful of Movies",
        x="",
        y="CPI Adjusted Gross Amount")+

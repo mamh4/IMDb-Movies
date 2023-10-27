@@ -203,7 +203,7 @@ a <- movies |> distinct(studio,year,title) |>
   theme_minimal()+
   theme(legend.position = "none")
 
-b <- movies |> distinct(studio,year,title,.keep_all = T) |>
+b <- movies |> distinct(studio,year,title) |>
   group_by(year,studio) |>
   mutate(studio = if_else(studio %in% (movies |>
                                         distinct(studio, year,gross_CPI_adjusted) |>

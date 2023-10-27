@@ -4,6 +4,54 @@
 source(here::here("scripts/setup.R"))
 ```
 
+
+
+```{r out.width="800px"}
+a <- movies |> distinct(studio,year,title) |>
+  group_by(year,studio) |>
+  mutate(studio = if_else(studio %in% (movies |>
+                                      distinct(studio, gross_CPI_adjusted) |>
+                                      group_by(studio) |>
+                                      summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+                                      arrange(desc(gross_CPI_adjusted)) |>
+                                      filter(!is.na(studio)) |>
+                                      slice(1:7) |>
+                                      select(studio) |> unlist()), studio,"Other"))|>
+  filter(!is.na(studio)) |>
+  ggplot(aes(x=year, fill=factor(studio)))+
+  geom_bar(position = "fill")+
+  labs(title = "Other Studios Are Starting To Take More Market Share\nIn Terms of Output But Not Gross",
+       subtitle = "Despite the relatively few movies produced by Buena Vista, it maintains spot of top\nGrossing Studios",
+       y="Proportion of Movies Produced")+
+  theme_minimal()+
+  theme(legend.position = "none")
+
+b <- movies |> distinct(studio,year,title,.keep_all = T) |>
+  group_by(year,studio) |>
+  mutate(studio = if_else(studio %in% (movies |>
+                                        distinct(studio, year,gross_CPI_adjusted) |>
+                                        group_by(studio) |>
+                                        summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+                                        arrange(desc(gross_CPI_adjusted)) |>
+                                        filter(!is.na(studio)) |>
+                                        dplyr::slice(1:7) |>
+                                        select(studio) |> unlist()), studio,"Other")) |>
+  filter(!is.na(studio)) |>
+  ggplot(aes(x=year, y=gross_CPI_adjusted,fill=factor(studio)))+
+  geom_bar(stat = "identity",position = "fill")+
+  labs(y="Proportion of Movies Gross", legend = "studio")+
+  theme_minimal()+
+  theme(legend.position = "bottom", legend.key.size = unit(0.5, 'cm'))
+
+(a | b)
+
+```
+
+
+Now we break the model into impacts of Genre, Run time, .....nkdfjsdkfjlsddöf
+
+
+
 * Answers to the research questions
 * Different methods considered
 * Competing approaches
@@ -11,11 +59,14 @@ source(here::here("scripts/setup.R"))
 
 Here we analyse the variables we believe have an influence on movie success
 
+## Genre - +geom_smooth()
+
 * Genre
 
 * Run-time (Attention span)
 
 * Budget
+Exclude all movies with budgets that are not US$.
 
 * Certificate
 
