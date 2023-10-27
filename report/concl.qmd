@@ -4,30 +4,21 @@
 source(here::here("scripts/setup.R"))
 ```
 
-* Take home message
-* Limitations
-* Future work?
+Using basic exploratory analysis we identified that: 
 
-Gross does not capture merch, dvds, TV re-runs, being hosted on streaming servieces...
-
-Obviously being the best in by each variable does not gurantee that aiming for all of them makes a movie successful, for that we would need create a multivariate model (will rephrase later)
-
-
-
--Future work can be scrapping more info or subscribe to an API,  
-
-
-END OF ANALYSIS BEFORE MODEL
-we acknowledge that aiming to reach the sweet spot in each of this categoris combined does not gurantee success and therefore we follow modelling approach in the next section
-
-Using basic exploratory analysis we identified that
 - Trending Genres are Action, Adventure and Comedy in term of gross and ratings with respect to recent years.
-- Movies with Best ratings are short (60-119 minutes).
+
+- Movies with the best ratings are short (60-119 minutes).
+
 - Certificates impact is genre dependent. Action Movies with Certificates greater than age of 12 retrieve higher gross.
+
 - Big Studios like 20th Century Fox, Buena Vista Pictures, Disney+, Paramount+, Sony Pictures, Universal Pictures, Warner Bros are still producing more profitable movies. 
--  
--
--
+
+- Low and very high budget movies tend to fare better critically 
+
+- Movies featuring stars with long standing careers are more favorably perceived by critics
+
+- Experienced directors tend to produce movies with higher average ratings
 
 Based on our rudimentary model, which defines success as the moment when a movie's gross earnings surpass its budget, we have identified several key factors that appear to exert significant influence. These factors include the film's age certification, the volume of movies produced by a given studio, the budget allocated, the average age of directors, and the ages of the actors involved.
 

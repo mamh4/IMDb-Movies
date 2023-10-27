@@ -1,10 +1,12 @@
 ---
-title: "A cool title"
-author: "Name I, First Name I and Name II, First Name II"
+title: "Driving factors of a film's success"
+author: "Mohamed Hassan, Pierre Jaillot, Arno Lorenz"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format: html
+toc: true
 output: html #file name
 ---
 
 ```{r child = c('intro.qmd', 'data.qmd', 'eda.qmd', 'analysis.qmd', 'concl.qmd')}
 ```
+

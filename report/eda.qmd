@@ -139,7 +139,7 @@ movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 
 ```
-As expected, older movies tend to do better in terms of gross when we adjust for the consumer price index to today's prices. Highlighted in green however we see a somewhat bizarre behavior. We take a closer look!
+As expected, older movies tend to do better in terms of gross when we adjust for the consumer price index to today's prices. Highlighted in green however we see a somewhat bizarre behavior. A closer examination of this behavior quickly reveals its causes. 
 
 
 ```{r bizzarre-behaviour}
@@ -165,9 +165,9 @@ movies |> distinct(year, gross,gross_CPI_adjusted, .keep_all = TRUE) |>
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
-After a closer look we see that those spikes in CPI adjusted gross were in the years 1937, 1939, 1940 and 1942. Let's take a closer look at what happened these years.
+These spikes in CPI adjusted gross were in the years 1937, 1939, 1940 and 1942. Let's take a closer look at what happened these years.
 
-#### 1937,39,40,42 Analysis
+#### Analysis of the years 1937, 1939, 1940 and 1942 
 
 ```{r 1937-39-40-42-analysis, out.width="700px", out.height="500px"}
 
@@ -193,7 +193,7 @@ movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
 
 Snow White and the Seven Dwarfs comprises more than 97% of the gross amount of The year 1937. Gone with the Wind comprises more than 91% of the gross amount of The Year 1937. Pinocchio (48.4%) and Fantasia (43.9%) together comprise 92% of The gross amount of the year 1940. Bambi comprises almost 73% of the gross amount of The year 1942
 
-### User Ratings and Meta score
+### User Ratings and Metascore
 
 ```{r ratings-analysis}
 movies |> distinct(year,rating,metascore,title) |> group_by(year) |>
@@ -217,7 +217,7 @@ movies |> distinct(year,rating,metascore,title) |> group_by(year) |>
 
 ```
 
-To conduct this comparison we standardised the Meta score ratings (From 0-100 to 0-10). This way we can compare it on a similar scale to IMDb User ratings. We first notice that the Meta score critics' ratings were largely missing up until 1930. In addition, we find a small discrepancy in comparison to IMDb's User Ratings. Interestingly this discrepancy although remained switched direction after 1970. Prior to the early 1970s, critics tended to give movies higher ratings than IMDb users did. Conversely, after that period, the situation reversed. Another important aspect we notice is the decline in both ratings and meta score compared to the earlier days.
+To conduct this comparison we standardised the Meta score ratings (From 0-100 to 0-10). This way we can compare it on a similar scale to IMDb User ratings. We first notice that the Meta score critics' ratings were largely missing up until 1930. In addition, we find a small discrepancy in comparison to IMDb's User Ratings. Interestingly this discrepancy although remained switched direction after 1970. Prior to the early 1970s, critics tended to give movies higher ratings than IMDb users did. Conversely, after that period, the situation reversed. Another important aspect we notice is the decline in both ratings and Metascore compared to the earlier days.
 
 ### Estimated Number of Tickets Sold
 
@@ -237,7 +237,7 @@ movies |> distinct(title, year,run_time, .keep_all = TRUE) |>
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
 
-This plot shows a very similar pattern to CPI Adjusted Gross we've witnessed earlier. Similarly the cause for the bizarre peaks between 1935 and 1945 is attributed to the movies Snow White and the Seven Dwarfs (1937), Pinocchio and Fantasia (1940), Bambi(1942).
+This plot shows a very similar pattern to CPI Adjusted Gross we've witnessed earlier. Similarly the cause for the bizarre peaks between 1935 and 1945 is attributed to the movies Snow White and the Seven Dwarfs (1937), Pinocchio and Fantasia (1940), Bambi (1942).
 
 ## Market Share Analysis (Movies and the Entertainment Industry)
 
@@ -259,5 +259,3 @@ movies |> distinct(title,year,run_time,population, .keep_all = TRUE) |>
 ```
 
 It seems as if the proportion of US population watching Featured Films has declined the 2000s in comparison to Earlier but if we recall from earlier, the reported gross amounts for films in the 2000s are mostly missing which impacts the number of views estimate.
-
-Smallest Budget + Longest Film?

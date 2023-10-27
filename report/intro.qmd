@@ -4,10 +4,6 @@
 source(here::here("scripts/setup.R"))
 ```
 
-* Overview and Motivation
-* Related Work
-* Research questions
-
 In our pursuit to comprehend the factors contributing to a film's success, we begin by establishing a clear definition of what we mean by "success." In this context, we have identified several key criteria that characterize successful movies:
 
 - **High Viewership**: Successful films tend to amass a substantial number of views, indicative of their broad audience appeal.
