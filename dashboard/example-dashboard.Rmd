@@ -98,6 +98,20 @@ checkboxGroupInput("genreFilter", "Select Genre:", choices = genres, selected = 
 ### Movies Evolution
 
 ```{r}
+
+return_selected_genres <- function(selected_genres, collapsed_genres){
+  movie_genres <- unlist(strsplit(collapsed_genres, ","))
+  browser()
+  result <- movie_genres[movie_genres %in% selected_genres]
+  if(length(result)==length(selected_genres)){
+    return(collapsed_genres)
+  } else {
+    return("NA Bla bLa")
+  }
+}
+
+
+
 filtered_movies <- reactive({
   selected_genres <- input$genreFilter
 
@@ -108,8 +122,13 @@ filtered_movies <- reactive({
   } else {
     # If specific genres are selected, filter based on those genres
     filtered_data <- filter(movies |>
-      distinct(title, year, genre, rating, stars,directors), 
-      genre %in% selected_genres)
+        distinct(title, year, genre, rating, stars,directors) |>
+        group_by(title, year, rating, stars,directors) |>
+        mutate(genre = paste(unique(genre), collapse = ",")) |>
+        ungroup()|>
+        unique() |>
+        mutate(fits_genres = return_selected_genres(selected_genres,genre)), 
+      fits_genres %in% genre)# genre %in% selected_genres)
   }
 
   return(filtered_data)
