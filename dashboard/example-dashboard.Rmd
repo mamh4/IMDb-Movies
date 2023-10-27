@@ -1,5 +1,5 @@
 ---
-title: "Diamonds distribution dashboard"
+title: "Movies Dashboard"
 output: 
   flexdashboard::flex_dashboard:
 runtime: shiny
@@ -10,11 +10,11 @@ library(flexdashboard)
 library(tidyverse)
 library(mgcv)
 library(DT)
+library(lubridate)
 knitr::opts_chunk$set(fig.width = 5)
 ```
 
-# Statistics
-
+# Movies
 
 ```{r data-loading-chunk}
 
@@ -93,9 +93,9 @@ checkboxGroupInput("genreFilter", "Select Genre:", choices = genres, selected = 
 ```
 
 
-## Column 2 {.tabset}
+## Column 2
 
-### Movies
+### Movies Evolution
 
 ```{r}
 filtered_movies <- reactive({
@@ -141,30 +141,6 @@ plotOutput("moviesPlot")
 
 ```
 
-
-### Colour
-
-This graph is interacive!
-
-```{r}
-ggplot(diamonds, aes(color)) + geom_bar()
-plotly::ggplotly()
-```
-
-### Carat
-
-Here we can manually adjust plotting options using shiny:
-
-```{r}
-sliderInput("binwidth", label = "Width of bins:",
-            min = 0.05, max = 1, value = 0.2, step = 0.05)
-```
-
-```{r}
-renderPlot({
-    ggplot(diamonds, aes(carat)) + geom_histogram(binwidth = input$binwidth)
-})
-```
 
 ## Column 3{data-width=400}
 
@@ -269,16 +245,237 @@ DTOutput("directorsTable")
 
 ```
 
-# Recommend Me A Movie! <!---(comment: {data-navmenu=More} to have dropdown called more with page inside)-->
 
-This map has nothing to do with diamonds.
+# Actors
+
+## Column 1
+
+### Actor Search {data-height=100}
+```{r}
+textInput("starFilter", "Actor Name:")
+
+starFilter <- unique(movies$stars) |> tolower()
+
+filtered_movies2 <- reactive({
+  selected_actor <- input$starFilter |> tolower()
+
+  if (length(selected_actor) == 0) {
+    # If no specific actor is selected, show all records
+    filtered_data <- movies |>
+      distinct(title, year, rating, stars, directors,dob_stars)
+  } else {
+    # If a specific actor is selected, filter based on that actor
+    filtered_data <- movies |> 
+      mutate(stars = tolower(stars)) |> 
+      distinct(title, year, genre, rating, stars, directors,dob_stars) |>
+      filter(stars %in% selected_actor)
+  }
+
+  return(filtered_data)
+})
+
+```
+### Actor Date of Birth
 
 ```{r}
-library(leaflet)
-leaflet() |>
-  setView(6.6323, 46.5197, zoom = 13) |> 
-  addTiles() |>
-  addMarkers(6.58443210712653, 46.52254230211193, popup = "Internef") 
+renderValueBox({
+  filtered_data <- filtered_movies2()
+  b <- filtered_data %>%
+    select(dob_stars) %>% slice(1)
+
+  valueBox(value = b[[1]], icon = "Date of Birth")
+})
+#first_dob_entry <- filtered_data |> select(dob_stars) |> slice(1)
+
 ```
 
 
+
+### Movie Titles
+
+```{r}
+
+output$actorsTable2 <- renderDT({
+  filtered_data <- filtered_movies2()
+  # Assuming you have a data frame called "filtered_data"
+  datatable(
+    filtered_data %>%
+      select(title,year,rating) %>%
+      unique(),
+    options = list(
+      pageLength =10,
+      searching = FALSE,
+      lengthChange = FALSE,
+      info = FALSE
+    )
+  )
+})
+DTOutput("actorsTable2")
+
+
+```
+
+## Column 2
+
+### Number of movies
+```{r}
+
+output$starAppearancePlot <- renderPlot({
+  filtered_data <- filtered_movies2()
+  if (length(unique(filtered_data$stars))==1) {
+    # Generate and render the plot only if a filter is selected
+    first_dob_entry <- filtered_data |> select(dob_stars) |> slice(1)
+    yob <- year(first_dob_entry[[1]])
+    career_table <- data.frame(age = seq(0, 2023 - yob, by = 1))
+
+    career_table <- career_table |> left_join(filtered_data |>
+      distinct(title, year, rating, dob_stars) |>
+      group_by(year, dob_stars) |>
+      summarise(
+        count = n()
+      ) |>
+      mutate(age = year - year(dob_stars)), join_by(age))
+
+    career_table$count = if_else(is.na(career_table$count), 0, career_table$count)
+    career_table$countPlus = cumsum(career_table$count)
+
+    ggplot(aes(x = age, y = countPlus), data = career_table) +
+      geom_line(col = "blue") +
+      labs(
+        y = "Number Of Featured Movies"
+      ) +
+      theme_minimal()
+  } else {
+    # Display a message or an empty plot if no filter is selected
+    # For example, you can return an empty plot
+    #plot(1, type = "n", xlab = "", ylab = "")
+  }
+})
+
+plotOutput("starAppearancePlot")
+
+```
+
+
+
+### Career Average Rating
+
+```{r}
+
+output$starCareerPlot <- renderPlot({
+  filtered_data <- filtered_movies2()
+  filtered_data |>
+    distinct(title,year,rating) |>
+    group_by(year) |>
+    summarise(
+      count = n(),
+      rating = mean(rating)) |>
+    ggplot(aes(x = year,y=rating)) +
+    #geom_line(aes(y = nr_missing_values), col = "red") +
+    geom_line(col = "blue") +
+    scale_x_continuous(breaks = seq(1915, 2025, 6)) +
+    labs(
+      y = "Average Rating"
+    ) +
+    #annotate("text", x = 1915, y = 350, vjust = "bottom", hjust = "left",
+    #         label = "Total", color = "blue") +
+    #annotate("text", x = 1915, y = 320, vjust = "bottom", hjust = "left",
+    #         label = "Incl. Gross", color = "red") +
+    theme_minimal() #+
+    #theme(axis.text.x = element_text(angle = 45, hjust = 1))
+})
+
+plotOutput("starCareerPlot")
+
+
+```
+
+
+## Column 3
+### Career with Co-actors
+
+```{r}
+
+output$actorsTable4 <- renderDT({
+  filtered_data <- filtered_movies2()
+  # Assuming you have a data frame called "filtered_data"
+  datatable(
+    filtered_data |>
+    distinct(title,stars) |>
+    left_join(movies |> distinct(title,year,stars),join_by(title)) |>
+    group_by(co_actors = stars.y) |>
+    summarise(count = n()) |>
+    arrange(desc(count)) |>
+    slice(-1), #get rid of ones self.
+    options = list(
+      pageLength =10,
+      searching = FALSE,
+      lengthChange = FALSE,
+      info = FALSE
+    )
+  )
+})
+DTOutput("actorsTable4")
+
+```
+
+### Career with Co-directors
+```{r}
+
+output$actorsTable3 <- renderDT({
+  filtered_data <- filtered_movies2()
+  # Assuming you have a data frame called "filtered_data"
+  datatable(
+    filtered_data |>
+    distinct(title,directors,rating) |>
+    group_by(directors) |>
+    summarise(
+      count = n(),
+      rating = mean(rating))|>
+      arrange(desc(rating)),
+    options = list(
+      pageLength =10,
+      searching = FALSE,
+      lengthChange = FALSE,
+      info = FALSE
+    )
+  )
+})
+DTOutput("actorsTable3")
+
+```
+
+# Recommend Me A Movie! <!---(comment: {data-navmenu=More} to have dropdown called more with page inside)-->
+
+```{r}
+
+ 
+actionButton("execute", "Recommend")
+
+observeEvent(input$execute, {
+    # When the "Recommend" button is pressed
+    random_number <- sample(1:250, 1)
+
+output$recommendation_table <- renderDT({
+  
+  datatable(
+    movies |> distinct(title,year,run_time,genre,stars,directors,rating,metascore,certificate) |>
+    group_by(title, year, run_time, rating, metascore, certificate) |>
+    mutate(stars = paste(unique(stars), collapse = ", "),
+         directors = paste(unique(directors), collapse = ", "),
+         genre = paste(unique(genre), collapse = ", ")) |>
+    ungroup() |>
+    unique()|>
+    slice(random_number),
+    options = list(
+      pageLength =1,
+      searching = FALSE,
+      lengthChange = FALSE,
+      info = FALSE
+    )
+  )
+})
+})
+DTOutput("recommendation_table")
+
+```
