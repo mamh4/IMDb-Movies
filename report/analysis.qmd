@@ -244,7 +244,7 @@ Now we break the model into impacts of Genre, Run time, .....nkdfjsdkfjlsddöf
 
 
 * Answers to the research questions
-* Different methods considered. 
+* Different methods considered
 * Competing approaches
 * Justifications
 
@@ -257,12 +257,304 @@ Here we analyse the variables we believe have an influence on movie success
 * Run-time (Attention span)
 
 * Budget
-Exclude all movies with budgets that are not US$.
 
+For the sake of simplicity, all budgets expressed in a currency different to US$ were omitted. 
+The remaining budgets were then adjusted using the consumer price index of their year of release. 
+
+One can notice that both in relative and absolute terms, the return on the investment is the highest for low and very high budget films. 
+The following plot explores the profitability of movies by putting the aforementioned budgets in relation with the North American gross. 
+
+
+
+```{r first budget plot}
+
+library(ggpubr)
+
+highest_gross_in_class <- movies |> distinct(title, year, .keep_all = TRUE) |> 
+  mutate(profit_category = ifelse((budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 1", 
+                                  ifelse((2*budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 2", "Profit")) ) |>
+  group_by(profit_category) |>
+  filter(row_number(desc(gross_CPI_adjusted)) <= 1)
+
+
+
+distinct_movies <- sum( ! duplicated( movies |> distinct(title, year, .keep_all = TRUE) ) )
+movies_break_even <- sum( ! duplicated( movies |> distinct(title, year, .keep_all = TRUE) |> 
+                                          filter(budget_CPI_adjusted < gross_CPI_adjusted ) ) )
+movies_2x <- sum( ! duplicated( movies |> distinct(title, year, .keep_all = TRUE) |> 
+  filter(2*budget_CPI_adjusted < gross_CPI_adjusted ) ) )
+
+percentage_movies_break_even <- 100 * movies_break_even / distinct_movies
+
+percentage_movies_2x <- 100 * movies_2x / distinct_movies
+  
+  
+x_plot_labels <- paste("$", as.character(seq(0,0.6e9,0.1e9) / 1e9), "B")
+y_plot_labels <- paste("$", as.character(seq(0,4.5e9,0.5e9) / 1e9), "B")
+
+
+
+p1 <- movies |> distinct(title, year, .keep_all = TRUE) |> 
+  mutate(profit_category = 
+           ifelse((budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 1", 
+                  ifelse((2*budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 2", "Profit")) ) |> 
+  ggplot(mapping = aes(x = budget_CPI_adjusted)) + 
+  geom_point(aes(y = gross_CPI_adjusted), alpha = 0.25) + 
+  geom_line( aes(x = budget_CPI_adjusted , y = budget_CPI_adjusted), color = "red") +
+  geom_line( aes(x = budget_CPI_adjusted , y = 2*budget_CPI_adjusted ), color = "green") +
+  geom_point(aes(y = gross_CPI_adjusted), size = 3, shape = 1, data = highest_gross_in_class) +
+  geom_smooth(aes(y = gross_CPI_adjusted)) +
+  ggrepel::geom_label_repel(size = 2, box.padding = unit(0.01, "lines"), aes(y = gross_CPI_adjusted, label = title), data = highest_gross_in_class) + 
+  scale_x_continuous(breaks = seq(0,0.6e9,0.1e9), labels = (x_plot_labels))+
+  scale_y_continuous(breaks = seq(0,4.5e9,0.5e9), labels = (y_plot_labels))+
+  labs(title = "Movies with a higher budget often break even in North America alone",
+       subtitle = paste0( as.character(round(percentage_movies_break_even)) ,
+                          "% of movies break even in North America and ",
+                          as.character(round(percentage_movies_2x)),
+                          "% cover the estimated cost of marketing"), 
+       x= "CPI Adjusted Budget" , y = "CPI Adjusted North American Gross")+
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+
+
+highest_budget_in_class <- movies |> 
+  mutate(profit_factor = (gross_CPI_adjusted - budget_CPI_adjusted)/budget_CPI_adjusted ) |> 
+  filter(profit_factor < 10 ) |>
+  mutate(profit_category = ifelse((budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 1", 
+                                  ifelse((2*budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 2", "Profit")) ) |>
+  group_by(profit_category) |>
+  filter(row_number(desc(budget_CPI_adjusted)) == 1)
+
+excluded_movies <- movies |> distinct(title, year, .keep_all = TRUE) |> 
+  filter(budget_CPI_adjusted > 0 ) |>
+  mutate(profit_category = 
+           ifelse((budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 1", 
+                  ifelse((2*budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 2", "Profit")) ) |> 
+  mutate(profit_factor = (gross_CPI_adjusted - budget_CPI_adjusted)/budget_CPI_adjusted ) |> 
+  filter(profit_factor >= 10 )
+
+number_excluded_movies <- sum( ! duplicated( excluded_movies ) )
+
+max_budget_excluded_movies <- max(excluded_movies$budget_CPI_adjusted)
+
+x_plot_labels <- paste("$", as.character(seq(0,0.6e9,0.1e9) / 1e9), "B")
+y_plot_labels <- as.character(seq(-1,10,1.0))
+
+p2 <- movies |> distinct(title, year, .keep_all = TRUE) |> 
+  filter(budget_CPI_adjusted > 0 ) |>
+  mutate(profit_category = 
+           ifelse((budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 1", 
+                  ifelse((2*budget_CPI_adjusted > gross_CPI_adjusted ), "Loss 2", "Profit")) ) |> 
+  mutate(profit_factor = (gross_CPI_adjusted - budget_CPI_adjusted)/budget_CPI_adjusted ) |> 
+  filter(profit_factor < 10 ) |>
+  ggplot(mapping = aes(x = budget_CPI_adjusted)) + 
+  geom_point(aes(y = profit_factor), alpha = 0.25) + 
+  geom_smooth(aes(y = profit_factor), alpha =0) + 
+  geom_line( aes(y = 0,  colour = "Without marketing")) +
+  geom_line( aes( y = 1 , colour = "With marketing \n equal to budget")) +
+  geom_point(aes(y = profit_factor), size = 3, shape = 1, data = highest_budget_in_class) +
+  ggrepel::geom_label_repel(size = 2, box.padding = unit(0.01, "lines"), aes(y = profit_factor, label = title), data = highest_budget_in_class) + 
+  scale_x_continuous(breaks = seq(0,0.6e9,0.1e9), labels = (x_plot_labels))+
+  scale_y_continuous(breaks = seq(-1,10,1.0), labels = (y_plot_labels))+
+  labs(title = "Movies with a lower budget are overrepresented among movies with a \n high profit to budget ratio in North America",
+       subtitle = paste0("The plot excludes ", 
+                         as.character(number_excluded_movies), 
+                         "entries with a profit to budget ratio greater than 10, all of which \n have a CPI adjusted budget inferior to $, are omitted", 
+                         as.character(round(max_budget_excluded_movies/1000000)),
+                         "M"), 
+       x= "CPI Adjusted Budget" , y = "Profit to Budget Ratio")+
+  scale_color_manual(name = "Break even point", values = c("Without marketing" = "red", "With marketing \n equal to budget" = "green")) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+g1 <- annotate_figure(ggarrange(p1, p2, ncol=2, nrow=1, common.legend = TRUE, legend="bottom"), 
+                      top = text_grob("Main Title", 
+                                      color = "black", 
+                                      size = 12))
+g1
+
+```
+
+```{r second budget plot}
+
+d <- movies |> distinct(title, year, .keep_all = TRUE)
+averageRating <- mean(d$rating, na.rm=TRUE)
+averageMetascore <- mean(d$metascore, na.rm=TRUE)
+
+x_plot_labels <- paste("$", as.character(seq(0,0.6e9,0.1e9) / 1e9), "B")
+y_plot_labels <- as.character(seq(0,10,1.0))
+
+
+test <- movies |> distinct(title, year, .keep_all = TRUE) |> 
+  filter(budget_CPI_adjusted > 0 ) |>
+  filter(budget_CPI_adjusted < 1e9 )
+
+p1 <- movies |> distinct(title, year, .keep_all = TRUE) |> 
+  filter(budget_CPI_adjusted > 0 ) |>
+  filter(budget_CPI_adjusted < 1e9 ) |>
+  ggplot(mapping = aes(x = budget_CPI_adjusted)) + 
+  geom_point(aes(y = rating), alpha = 0.25) + 
+  geom_smooth(aes(y = rating), alpha = 0) + 
+  geom_line( aes(y = averageRating, colour = "Average rating")) + 
+  labs(
+    # title = "plchld",
+    #    subtitle = "Placeholder subtitle",
+       x= "CPI Adjusted Budget" , y = "IMDb rating")+
+  scale_color_manual(name = "", values = c("Average rating" = "red")) + 
+  scale_x_continuous(breaks = seq(0,0.6e9,0.1e9), labels = (x_plot_labels))+
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,1.0), labels = (y_plot_labels))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+x_plot_labels <- paste("$", as.character(seq(0,0.6e9,0.1e9) / 1e9), "B")
+y_plot_labels <- as.character(seq(0,100,10))
+
+p2 <- movies |> distinct(title, year, .keep_all = TRUE) |> 
+  filter(budget_CPI_adjusted > 0 ) |>
+  filter(budget_CPI_adjusted < 1e9 ) |>
+  ggplot(mapping = aes(x = budget_CPI_adjusted)) + 
+  geom_point(aes(y = metascore), alpha = 0.25) + 
+  geom_smooth(aes(y = metascore), alpha = 0) + 
+  geom_line( aes(y = averageMetascore, colour = "Average rating")) + 
+  labs(
+    # title = "plchld",
+    #    subtitle = "Placeholder subtitle",
+       x= "CPI Adjusted Budget" , y = "Metascore rating")+
+  scale_color_manual(name = "", values = c("Average rating" = "red")) + 
+  scale_x_continuous(breaks = seq(0,0.6e9,0.1e9), labels = (x_plot_labels))+
+  scale_y_continuous(breaks = seq(0,100,10), labels = (y_plot_labels))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+
+g2 <- annotate_figure(ggarrange(p1, p2, ncol=2, nrow=1, common.legend = TRUE, legend="bottom"), 
+                      top = text_grob("IMDb and Metascore ratings follow similar trends with respect to budget increase", 
+                                      color = "black", 
+                                      size = 12))
+
+
+g2
+
+
+```
 * Certificate
 
 * Studio
 
 * Director
 
+```{r first director plot}
+
+x_plot_labels <- as.character(seq(0,50,5))
+y_plot_labels <- as.character(seq(0,10,1.0))
+p <- movies |> distinct(title, year, directors, .keep_all = TRUE) |>
+  group_by(directors) |>  
+  mutate(rank = map_int(year, ~ sum(.x > year))) |>
+  ungroup() |>
+  ggplot(mapping = aes(x = rank )) + 
+  geom_point(aes(y = rating), alpha = 0.25) + 
+  geom_line(aes(y = averageRating), color = "red") +
+  geom_smooth(aes(y = rating)) + 
+  labs(title = "The average IMDb rating of a given director's movies increases with experience",
+       # subtitle = "Placeholder subtitle",
+       x= "Number of movies previously directed" , y = "Average IMDb rating")+
+  scale_color_manual(name = "", values = c("Average rating" = "red")) + 
+  scale_x_continuous(limits = c(0,50), breaks = seq(0,50,5), labels = (x_plot_labels))+
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,1.0), labels = (y_plot_labels))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+p
+
+```
+
 * Actor
+
+```{r first actor plot}
+
+x_plot_labels <- as.character(seq(0,65,5))
+y_plot_labels <- as.character(seq(0,10,1.0))
+p <- movies |> distinct(title, year, stars, .keep_all = TRUE) |>
+  group_by(stars) |> 
+  summarise(avgRating = mean(rating, na.rm=TRUE), 
+            avgMetascore  = mean(metascore, na.rm=TRUE), 
+            appearances= n(), 
+            careerLength = max(year, na.rm=TRUE) - min(year, na.rm=TRUE) ) |> 
+  filter(careerLength < 75) |> #Two persons named tom lewis 
+  ggplot(mapping = aes(x = careerLength )) + 
+  geom_point(aes(y = avgRating), alpha =0.25) +
+  geom_line( aes(y = averageRating, colour = "Average rating" )) + 
+  geom_smooth(aes(y = avgRating)) + 
+  labs(title = "The yearly average IMDb rating tends to increase with the length \n  of an actor's career",
+     # subtitle = "Placeholder subtitle",
+     x= "Age of the career" , y = "Average IMDb rating")+
+  scale_color_manual(name = "", values = c("Average rating" = "red")) + 
+  scale_x_continuous(limits = c(0,65), breaks = seq(0,65,5), labels = (x_plot_labels))+
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,1.0), labels = (y_plot_labels))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+p
+
+```
+
+```{r first actor profit plot}
+
+averageProfit <- mean(d$profit_CPI_adjusted, na.rm=TRUE)
+
+x_plot_labels <- as.character(seq(0,65,5))
+y_plot_labels <- paste("$", as.character(seq(-0.25e9,1.0e9,0.1e9) / 1e9), "B")
+p <- movies |> distinct(title, year, stars, .keep_all = TRUE) |>
+  group_by(stars) |> filter()  |>  
+  summarise(avgProfit = mean(profit_CPI_adjusted, na.rm=TRUE), 
+            appearances= n(), 
+            careerLength = max(year, na.rm=TRUE) - min(year, na.rm=TRUE) ) |> 
+  filter(careerLength < 75) |> #Two persons named tom lewis 
+  ggplot(mapping = aes(x = careerLength )) + 
+  geom_point(aes(y = avgProfit), alpha =0.25) +
+  geom_smooth(aes(y = avgProfit), alpha =0 ) +
+  geom_line( aes(y = averageProfit, colour = "Average CPI adjusted profit")) + 
+  geom_smooth(aes(y = avgProfit )) + 
+  labs(title = "The yearly average CPI adjusted profit tends to increase \n with the length of an actor's career",
+       subtitle = "Entries with an average CPI adjusted profit over $ 1B are omitted",
+       x= "Age of the career" , y = "Average CPI adjusted profit")+
+  scale_color_manual(name = "", values = c("Average CPI adjusted profit" = "red")) + 
+  scale_x_continuous(limits = c(0,65), breaks = seq(0,65,5), labels = (x_plot_labels))+
+  scale_y_continuous(limits = c(-0.25e9,1e9), breaks= seq(-0.25e9,1.0e9,0.1e9), labels = (y_plot_labels))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+p
+
+```
+
+```{r second actor profit plot}
+
+x_plot_labels <- as.character(seq(0,65,5))
+y_plot_labels <- as.character(seq(-1,10,1))
+p <- movies |> mutate(profitRatio = profit_CPI_adjusted/budget_CPI_adjusted)|> 
+  distinct(title, year, stars, .keep_all = TRUE) |>
+  group_by(stars) |> 
+  summarise(avgProfitRatio = mean(profitRatio, na.rm=TRUE), 
+            appearances= n(), 
+            careerLength = max(year, na.rm=TRUE) - min(year, na.rm=TRUE) ) |> 
+  filter(careerLength < 75) |> #Two persons named tom lewis 
+  filter(avgProfitRatio < 10 ) |>
+  ggplot(mapping = aes(x = careerLength )) + 
+  geom_point(aes(y = avgProfitRatio), alpha =0.25) +
+  geom_smooth(aes(y = avgProfitRatio), alpha =0.25) +
+  geom_line( aes(y = 0,  colour = "Without marketing")) +
+  geom_line( aes( y = 1 , colour = "With marketing \n equal to budget")) +
+  labs(title = "The yearly average profit to budget ratio tends to increase \n with the length of an actor's career",
+       subtitle = "Entries with an average profit to budget ratio greater than 10 are omitted",
+       x= "Age of the career" , y = "Average profit to budget ratio")+
+  scale_x_continuous(limits = c(0,65), breaks = seq(0,65,5), labels = (x_plot_labels))+
+  scale_y_continuous(limits = c(-1,10), breaks= seq(-1,10,1), labels = (y_plot_labels))+
+  scale_color_manual(name = "Break even point", values = c("Without marketing" = "red", "With marketing \n equal to budget" = "green")) + 
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 0, hjust=1))
+
+p 
+
+```
