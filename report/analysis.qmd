@@ -10,6 +10,9 @@ We now consider the impact of the genres on Movies. The first plot below already
 
 ```{r Analysis : Genre & Gross, out.width="1800px"}
   movies |>
+    mutate(
+      genre = if_else(genre=="Musical","MuL",genre),
+      genre = if_else(genre!="MuL",substr(genre,1,3),"MuL")) |>
     group_by(genre,year) |>
     summarise(TotalGross = sum(gross_CPI_adjusted , na.rm = T),
               .groups = "keep") |>
@@ -26,6 +29,7 @@ We now consider the impact of the genres on Movies. The first plot below already
           y = "Total Gross") +
     scale_y_continuous(limits = c(0, NA),oob = squish)
 ```
+(Act : Action, Adv : Adventure, Ani : Animation, Bio : Biography, Com : Comedy, Cri : Crime, Dra : Drama, Fam : Family, Fan : Fantasy, Fil : Film-Noir, His : History, Hor : Horror, MuL : Musical, Mus : Music, Mys  Mystery, Rom : Romance, Sci : Sci-Fi, Spo : Sport, Thr : Thriller, Wes : Western)
 
 The graphical representation clearly indicates that Action, Adventure, and Comedy are the most prevalent and lucrative genres within the realm of filmmaking. Consequently, these categories hold great promise for filmmakers seeking commercial success. Conversely, genres such as Horror, Thriller, and Sci-Fi exhibit an emerging popularity and offer studios a promising avenue for exploration.
 
