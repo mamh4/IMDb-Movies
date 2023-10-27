@@ -171,93 +171,6 @@ After a closer look we see that those spikes in CPI adjusted gross were in the y
 
 ```{r 1937-39-40-42-analysis, out.width="700px", out.height="500px"}
 
-a <- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-  filter(year==1937,!is.na(gross)|gross>0) |>
-  ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
-  geom_bar(stat = "identity") +
-  scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
-  labs(title = "The Bizarre Behaviour at the Years 1937, 1939, 1940\nand 1942 Can be Explained By a Handful of Movies",
-       x="",
-       y="CPI Adjusted Gross Amount")+
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 90, hjust=1))
-
-b <- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-  filter(year==1939,!is.na(gross)|gross>0) |>
-  ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
-  geom_bar(stat = "identity") +
-  scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
-  labs(x="",
-       y="CPI Adjusted Gross Amount")+
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 90, hjust=1),
-        axis.title.y = element_blank(),    # Removes the y-axis title
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank())
-
-c <- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-  filter(year==1940,!is.na(gross)|gross>0) |>
-  ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
-  geom_bar(stat = "identity") +
-  scale_y_continuous(labels = scales::comma, limits = c(0,45e8))+
-  labs(x="Movie Titles With Gross Amount",
-       y="CPI Adjusted Gross Amount")+
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 90, hjust=1),
-        axis.title.y = element_blank(),    # Removes the y-axis title
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank())
-
-d<- movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-  filter(year==1942,!is.na(gross)|gross>0) |>
-  ggplot(aes(x=fct_reorder(title,gross_CPI_adjusted), y=gross_CPI_adjusted,gross))+
-  geom_bar(stat = "identity") +
-  scale_y_continuous(labels= scales::comma,limits = c(0,45e8))+
-  labs(x="",
-       y="CPI Adjusted Gross Amount")+
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 90, hjust=1),
-        axis.title.y = element_blank(),    # Removes the y-axis title
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank())
-
-(a|b|c|d)
-
-# code for percentages
-# movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-#    filter(year==1937,!is.na(gross)|gross>0) |>
-#    mutate(proportion = gross_CPI_adjusted / sum(gross_CPI_adjusted))
-#
-# movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-#    filter(year==1939,!is.na(gross)|gross>0) |>
-#    mutate(proportion = gross_CPI_adjusted / sum(gross_CPI_adjusted))
-# 
-# movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-#    filter(year==1940,!is.na(gross)|gross>0) |>
-#    mutate(proportion = gross_CPI_adjusted / sum(gross_CPI_adjusted))
-# 
-# movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-#    filter(year==1942,!is.na(gross)|gross>0) |>
-#    mutate(proportion = gross_CPI_adjusted / sum(gross_CPI_adjusted))
-
-
-movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
-  filter(year %in% c(1937,1939,1940,1942),!is.na(gross)|gross>9e7) |>
-  mutate(ordering = - year + (gross_CPI_adjusted /(gross_CPI_adjusted+1)))|>
-  ggplot(aes(x=fct_reorder(title,desc(ordering)), y=gross_CPI_adjusted,gross))+
-  geom_bar(stat = "identity") +
-  scale_y_continuous(limits = c(0, 45e8),
-    breaks = seq(0, 45e8, by = 1e9),
-    labels = c("0", "1b", "2b", "3b", "4b"))+
-  facet_grid(. ~ factor(year), scales="free_x", space="free_x")+
-  labs(title = "The Bizarre Behaviour at the Years 1937, 1939, 1940\nand 1942 Can be Explained By a Handful of Movies",
-       x="",
-       y="CPI Adjusted Gross Amount")+
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 90, hjust=1,vjust=0.25))
-  #theme(panel.spacing=unit(0,"pt"), 
-  #      panel.border=element_rect(colour="grey50", fill=NA))
-
 movies |> distinct(title,year,gross_CPI_adjusted,gross) |>
   filter(year %in% c(1937,1939,1940,1942),!is.na(gross)|gross>9e7) |>
   mutate(ordering = - year + (gross_CPI_adjusted /(gross_CPI_adjusted+1)))|>
@@ -304,7 +217,7 @@ movies |> distinct(year,rating,metascore,title) |> group_by(year) |>
 
 ```
 
-To conduct this comparison we standardised the Meta score ratings (From 0-100 to 0-10). This way we can compare it on a similar scale to IMDb User ratings. We first notice that the Meta score critics' ratings were largely missing up until 1930. In addition, we find a small discrepancy in comparison to IMDb's User Ratings. Interestingly this discrepancy although remained switched direction after 1970. Prior to the early 1970s, critics tended to give movies higher ratings than IMDb users did. Conversely, after that period, the situation reversed.
+To conduct this comparison we standardised the Meta score ratings (From 0-100 to 0-10). This way we can compare it on a similar scale to IMDb User ratings. We first notice that the Meta score critics' ratings were largely missing up until 1930. In addition, we find a small discrepancy in comparison to IMDb's User Ratings. Interestingly this discrepancy although remained switched direction after 1970. Prior to the early 1970s, critics tended to give movies higher ratings than IMDb users did. Conversely, after that period, the situation reversed. Another important aspect we notice is the decline in both ratings and meta score compared to the earlier days.
 
 ### Estimated Number of Tickets Sold
 
@@ -329,22 +242,6 @@ This plot shows a very similar pattern to CPI Adjusted Gross we've witnessed ear
 ## Market Share Analysis (Movies and the Entertainment Industry)
 
 ```{r market-share-analysis}
-movies |> distinct(title, year,run_time,population, .keep_all = TRUE) |>
-  group_by(year,population) |>
-  reframe(mean_tickets_sold = mean(nr_tickets_sold,na.rm=T)) |>
-  unique() |>
-  filter(!is.na(mean_tickets_sold)) |>
-  ggplot(aes(x=year)) +
-  geom_line(aes(y=mean_tickets_sold)) +
-  geom_line(aes(y=population)) +
-  scale_x_continuous(breaks = seq(1915,2025,6)) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(y="Estimated Number Of Views\nTotal Population", 
-       title = "Estimated Number of Views Have Been Largly Stable Over Time",
-       subtitle = "Perturbations during WWII (1936-1945) analysed earlier can be attributed to the titles\nSnow White and the Seven Dwarfs (1937), Pinocchio and Fantasia\n(1940), Bambi(1942). Drop around Covid-19 (2020-2022)")+
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
-
 movies |> distinct(title,year,run_time,population, .keep_all = TRUE) |>
   group_by(year) |>
   reframe(proportion = mean(nr_tickets_sold,na.rm=T) / population) |>
