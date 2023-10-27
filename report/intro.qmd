@@ -8,4 +8,16 @@ source(here::here("scripts/setup.R"))
 * Related Work
 * Research questions
 
-Here we mention ideally what we want to do, we define what we mean by success, i,e longevity, number of views, audience reception, profitability
+In our pursuit to comprehend the factors contributing to a film's success, we begin by establishing a clear definition of what we mean by "success." In this context, we have identified several key criteria that characterize successful movies:
+
+- **High Viewership**: Successful films tend to amass a substantial number of views, indicative of their broad audience appeal.
+
+- **Positive Audience Reception**: Audience perception is paramount. Successful movies are those that are well-received and embraced by their viewers.
+
+- **Longevity**: A hallmark of success in the cinematic world is a movie's ability to endure the test of time. This is evident when audiences continue to revisit and appreciate the film, even across generations.
+
+- **Profitability**: A financially successful movie is one that not only captures the hearts of viewers but also garners profitability in terms of its financial returns.
+
+To address these considerations, we have undertaken an investigative endeavor that involves the collection of movie-related data. IMDb, a venerable platform renowned for its extensive movie reviews and comprehensive data archives, serves as a primary source for our data aggregation. In our pursuit of a holistic understanding, we have also chosen to enhance IMDb's data with supplementary information extracted from Wikipedia.
+
+From the wealth of data we have gathered, we have pinpointed certain variables that serve as indicators of a film's success. These include IMDb's user rating, the gross earnings within the United States (denominated in U.S. currency), and the meta score, representing the critical appraisal of each movie. The subsequent section offers an in-depth presentation of this data, allowing for a comprehensive exploration of the factors contributing to a film's success.

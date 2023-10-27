@@ -15,3 +15,31 @@ Obviously being the best in by each variable does not gurantee that aiming for a
 
 
 -Future work can be scrapping more info or subscribe to an API,  
+
+
+END OF ANALYSIS BEFORE MODEL
+we acknowledge that aiming to reach the sweet spot in each of this categoris combined does not gurantee success and therefore we follow modelling approach in the next section
+
+Using basic exploratory analysis we identified that
+- Trending Genres are Action, Adventure and Comedy in term of gross and ratings with respect to recent years.
+- Movies with Best ratings are short (60-119 minutes).
+- Certificates impact is genre dependent. Action Movies with Certificates greater than age of 12 retrieve higher gross.
+- Big Studios like 20th Century Fox, Buena Vista Pictures, Disney+, Paramount+, Sony Pictures, Universal Pictures, Warner Bros are still producing more profitable movies. 
+-  
+-
+-
+
+Based on our rudimentary model, which defines success as the moment when a movie's gross earnings surpass its budget, we have identified several key factors that appear to exert significant influence. These factors include the film's age certification, the volume of movies produced by a given studio, the budget allocated, the average age of directors, and the ages of the actors involved.
+
+It's imperative to note that our model has been crafted to emulate our collective perception of successful movies. In this context, we aim to correlate our notions of success with the following constructs:
+- Achieving a substantial viewership.
+- Earning favor among the audience.
+- Exhibiting lasting appeal, with viewers returning to it over time and newer generations expressing continued interest.
+- Demonstrating profitability.
+
+We should also emphasize that the quality of the data we have obtained through web scraping is subject to variations in Wikipedia's search result rankings and the evolving HTML structure of its pages.
+
+Enhancing the overall quality of the IMDb dataset would be a more prudent approach. This involves allocating additional time to meticulous data cleaning and dedicating more computational resources to enriching the entire IMDb dataset, as opposed to solely focusing on entries with over 10,000 votes.
+
+
+
