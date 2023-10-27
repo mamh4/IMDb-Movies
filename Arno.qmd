@@ -163,7 +163,7 @@ library(tidyverse)
 # })
 ```
 
-```{r Genre Analysis}
+```{r Analysis : Genre & Profit }
 suppressWarnings({
   movies |>
     group_by(genre , year) |>
@@ -202,7 +202,8 @@ The overarching conclusion drawn from this analysis is that genres such as Actio
 #   summarise(count = n())
 ```
 
-```{r}
+```{r Creating : Runtime Bins dataframe}
+# | out-width: 
 Runtime_lenght_bins_df <- movies |> 
   filter(run_time > 0) |>
   mutate(runtime_bins = as.factor(run_time %/% 60)) |>
@@ -250,7 +251,7 @@ Runtime_lenght_bins_df <- movies |>
 
 ```
 
-```{r}
+```{r Creating : rating_joined_runtime_df}
 yearly_avg_rating_df <- Runtime_lenght_bins_df |>
   select(year,rating,genre) |>
   group_by(year) |>
@@ -266,7 +267,7 @@ rating_joined_runtime_df <- left_join(bin_avg_rating_df , yearly_avg_rating_df,
                                join_by(year))
 ```
 
-```{r}
+```{r Creating rating_joined_df_with_genre}
 yearly_avg_rating_by_genre <- Runtime_lenght_bins_df |>
   select(year , rating , genre) |>
   group_by(year , genre) |>
@@ -284,7 +285,7 @@ rating_joined_df_with_genre <- left_join(bin_avg_rating_by_genre ,
                                   join_by(year , genre))
 ```
 
-```{r}
+```{r Analysis : Rating deviation trend}
 suppressWarnings({print(
   rating_joined_df_with_genre |>
   group_by(runtime_bins,genre,year) |>
@@ -317,7 +318,7 @@ In contrast, genres such as Sci-Fi, Mystery, and Romance have maintained a consi
 <!-- This trend affects nearly all genres, although adventure & Comedy seem to have a comeback in recent years. This finding backs the results found when analyzing the profit by genre.  -->
 <!-- Genres like Sci-Fi, Mystery & Romance seem to have remained constant over the years. One reason for this could be that those are "niche" categories, only dedicated fan base would go watch the said movie. Furthermore the audience would probably already expects a certain duration from those movies. -->
 
-```{r}
+```{r Analysis : Attention span}
 rating_joined_runtime_df |>
   group_by(runtime_bins,year) |>
   summarise(AVG_rating_excl_trend = yearly_AVG_rating - bin_AVG_rating,
@@ -483,7 +484,7 @@ In light of these findings, we can deduce that the optimal duration for achievin
 
 certificate / genre / gross ?? For which cert is the most appropriate gross wise / rating wise / ...
 
-```{r}
+```{r Analysis : Certificate}
 movies |> 
   select(certificate_adjusted , genre , gross_CPI_adjusted , rating ) |>
   filter(!is.na(certificate_adjusted)) |>
