@@ -4,36 +4,210 @@
 source(here::here("scripts/setup.R"))
 ```
 
+## Genre Analysis
+
+We now consider the impact of the genres on Movies. The first plot below already indicates all genres we have in our data set with respect to gross.
+
+```{r Analysis : Genre & Gross, out.width="1800px"}
+  movies |>
+    group_by(genre,year) |>
+    summarise(TotalGross = sum(gross_CPI_adjusted , na.rm = T),
+              .groups = "keep") |>
+    ggplot(aes( x = year, y = TotalGross)) +
+      geom_point() +
+      geom_smooth(formula = y ~ x,
+                  method = "loess") +
+      theme(axis.ticks.x = element_blank(),
+            axis.text.x=element_blank()) +
+      facet_grid(~genre) +
+      labs(title = "Current best genres to make a movie in are Action,\nAdventure & Comedy.",
+           subtitle = "On the other hand genres like War, History, Music & Sport seem\nto have stagnated / decresed in popularity.",
+           x = "Year for each genre (1920-2023)",
+          y = "Total Gross") +
+    scale_y_continuous(limits = c(0, NA),oob = squish)
+```
+
+The graphical representation clearly indicates that Action, Adventure, and Comedy are the most prevalent and lucrative genres within the realm of filmmaking. Consequently, these categories hold great promise for filmmakers seeking commercial success. Conversely, genres such as Horror, Thriller, and Sci-Fi exhibit an emerging popularity and offer studios a promising avenue for exploration.
+
+The genre of Drama, with its intrinsic ability to intermingle with various other genres, naturally mirrors the trends set by these other categories. This adaptability allows it to remain a pertinent genre in alignment with evolving audience preferences.
+
+In examining the less profitable genres, it is discernible that the War genre has witnessed a decline in popularity since the mid-20th century, conceivably due to its waning relevance as a subject matter in contemporary times. In the case of History, it appears that the market has reached a point of saturation, as the vast majority of significant historical events have been exhaustively documented. Genres like Biography and Western, by contrast, occupy a niche space within the cinematic landscape, appealing to a more limited audience segment and consequently offering diminished potential for trending success.
+
+The overarching conclusion drawn from this analysis is that genres such as Action, Adventure, and Comedy notably enhance the prospects of achieving financial success in the realm of filmmaking.
+
+```{r Creating : Runtime Bins dataframe}
+Runtime_lenght_bins_df <- movies |> 
+  filter(run_time > 0) |>
+  mutate(runtime_bins = as.factor(run_time %/% 60)) |>
+  mutate(runtime_bins = fct_recode(runtime_bins,
+                                   "Very Short" = "0", # up to 59 min
+                                   "Short" = "1",      # 60-119 min 
+                                   "Average" = "2",    # 120-179 min
+                                   "Long" = "3",       # up to 4h 
+                                   "Very Long" = "4",  # up to 5h and more...
+                                   "Very Long" = "5",
+                                   "Very Long" = "6",
+                                   "Very Long" = "7")) |>
+  select(title , year , run_time , runtime_bins , gross_CPI_adjusted ,
+         rating , metascore , genre) |>
+  distinct(title , .keep_all = TRUE)
+```
+
+```{r Creating : rating_joined_runtime_df}
+yearly_avg_rating_df <- Runtime_lenght_bins_df |> 
+  select(year,rating,genre) |>
+  group_by(year) |>
+  summarise(yearly_AVG_rating = mean(rating , na.rm = T))
+
+bin_avg_rating_df<-Runtime_lenght_bins_df |>
+  select(runtime_bins,year,rating,genre) |>
+  group_by(runtime_bins,year) |>
+  summarise(bin_AVG_rating = mean(rating , na.rm = T), 
+            .groups = "drop")
+# creating the df that has both types of average rating to find out how the trend behaves
+rating_joined_runtime_df <- left_join(bin_avg_rating_df , yearly_avg_rating_df,
+                               join_by(year)) 
+
+#Creating rating_joined_df_with_genre :
+yearly_avg_rating_by_genre <- Runtime_lenght_bins_df |>
+  select(year , rating , genre) |>
+  group_by(year , genre) |>
+  summarise(yearly_AVG_rating = mean(rating , na.rm = T),
+            .groups = "drop")
+
+bin_avg_rating_by_genre <- Runtime_lenght_bins_df |>
+  select(runtime_bins , year , rating , genre) |>
+  group_by(runtime_bins , year , genre) |>
+  summarise(bin_AVG_rating = mean(rating , na.rm = T), 
+            .groups = "drop")
+# creating the df that has both types of average rating & genre to find out how the trend behaves
+rating_joined_df_with_genre <- left_join(bin_avg_rating_by_genre , 
+                                  yearly_avg_rating_by_genre,
+                                  join_by(year , genre)) 
+```
+
+```{r Analysis : Rating deviation trend}
+suppressWarnings({print(
+  rating_joined_df_with_genre |>
+  group_by(runtime_bins,genre,year) |>
+  #filter(genre != "Western"& genre !="Thriller" & genre !="Crime",genre !="Drama",genre !="Family",genre !="Biography", genre !="Musical") |>
+  summarise(AVG_rating_excl_trend = yearly_AVG_rating - bin_AVG_rating,
+            .groups = "keep") |>
+  ggplot(aes( x = year , y = AVG_rating_excl_trend)) +
+    geom_smooth(aes(color = genre), se =FALSE,
+                formula = y ~ x, method = "loess") +
+    labs(title = "Could attention span be the reason of the decrese in ratings ?",
+    subtitle = "Action, Adventure & Comedy seem to rise again. Sci-Fi, Romance \n& Mystery remained constant.",
+         x = "Year",
+         y = "Average rating deviation trend",
+         color = "Genre") +
+    coord_cartesian(xlim = c(1915 , 2025)) +
+    scale_x_continuous(breaks = seq(1915 , 2025 , 6)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom")
+)})
+# suppressing warnings with regards to geom_smooth
+```
+
+This graphic provides an illustrative depiction of the annual average rating deviation from the normative rating associated with specific run-time intervals. Notably, there has been a discernible decline in movie ratings since the 1970s. This decline may be attributed to a variety of factors, such as a decreasing collective attention span or elevated expectations regarding the optimal duration of a movie.
+
+This intriguing trend is pervasive across multiple genres, with adventure and comedy experiencing a resurgence in recent years. This resurgence is in alignment with our prior observations when assessing genre-specific profitability trends.
+
+In contrast, genres such as Sci-Fi, Mystery, and Romance have maintained a consistent trajectory over the years. One plausible explanation for this constancy is the niche appeal of these genres, catering to dedicated fan bases with specific expectations regarding both content and duration. As a result, these genres tend to exhibit more stability in their ratings over time.
+
+## Run time Analysis
+
+```{r Analysis : Attention span}
+rating_joined_runtime_df |>
+  group_by(runtime_bins,year) |>
+  summarise(AVG_rating_excl_trend = yearly_AVG_rating - bin_AVG_rating,
+            .groups = "keep") |>
+  ggplot(aes( x = year , y = AVG_rating_excl_trend)) +
+    geom_point(aes(shape = runtime_bins,
+                   color = runtime_bins)) +
+    geom_smooth(aes(color = runtime_bins), se =FALSE,
+                formula = y ~ x,
+                method = "loess") +
+    labs(title = "Attention span seem to decrese over time.",
+         subtitle = "Films between 60 to 120 min seem to have gained popularity.",
+         x = "Year",
+         y = "Average Rating Excluding the trend",
+         color = "Run time",
+         shape = "Run time") +
+    coord_cartesian(xlim = c(1915 , 2025)) +
+    scale_x_continuous(breaks = seq(1915 , 2025 , 6)) +
+    theme(axis.text.x = element_text(angle = 45, hjust=1),
+          legend.position = "bottom")
+```
+("Very Short" : 0-59min, "Short" : 60-119min, "Average" : 120-179min, "Long" : 180-239min, "Very Long" : 4h & more )
+
+Upon eliminating the influence of rating trend deviations, a more evident pattern emerges. Notably, the majority of run-time categories exhibit a negative impact on movie ratings, with one notable exception being the category encompassing movies with a run time falling between 60 and 119 minutes, denoted as "Short" run time in the graphic.
+
+The extensive rating fluctuations observed in very short movies are, in all likelihood, an outcome of overfitting stemming from a limited dataset. Moreover, the persistently negative trend observed in this category from the 1980s onward may be attributed to the audience's perception that such brief cinematic experiences lack the closure and satisfaction characteristic of full-length films, which are typically longer than an hour. It is worth noting that these very short movies may predominantly attract dedicated movie enthusiasts, who tend to be more discerning in their assessments. Furthermore, mainstream audiences may not regard films lasting less than one hour as constituting "proper" cinematic experiences. According to the data, it is not advisable to produce "Very Short" movies, although further investigation is warranted to solidify this assertion.
+
+In light of these findings, we can deduce that the optimal duration for achieving the highest ratings, as perceived by the audience, falls within the range of 60 to 119 minutes. This revelation offers an additional metric for evaluating a movie's success from the perspective of its reception by viewers.
+
+## Certificate Analysis
+```{r Analysis : Certificate}
+movies |> 
+  select(certificate_adjusted , genre , gross_CPI_adjusted) |>
+  filter(!is.na(certificate_adjusted)) |>
+  mutate(as.factor(certificate_adjusted)) |>
+  filter(genre == "Action" | genre == "Animation" | genre=="Comedy"|
+         genre == "Horror"|genre == "Sci-Fi" | genre =="Thriller" ) |> # filter on certain genres that are more interesting for the analysis 
+  group_by(certificate_adjusted , genre) |>
+  summarise(Total_gross = sum(gross_CPI_adjusted , na.rm = T ),
+            .groups = "keep") |> 
+  ggplot(aes( x = genre , y = Total_gross )) + 
+    geom_bar(aes(x = genre, fill = factor(certificate_adjusted)),
+            position = "dodge",
+            stat = "identity") + 
+    labs(title = "Certificates for certain genres play a key role for movie\ncredibility.",
+         subtitle = "For Horror a certificate around 16+ years is adequate to maximise\nprofits.",
+        x = "Genre",
+        y = "Total gross by certificate",
+        fill = "Certificate")
+
+```
+
+A more detailed examination of specific genres reveals the considerable impact of certificate labels on film success. It becomes evident that a deep understanding of your target audience is paramount when creating movies in particular genres. Some genres are markedly influenced by age labels, not only affecting box office earnings but also shaping audience preferences, particularly in the genres of Action, Horror, Sci-Fi, and Thriller.
+
+In the case of Action films carrying a minimum age label of 12-13, audience expectations gravitate towards more intense and high-quality action sequences, which can serve as a pivotal incentive for individuals to visit movie theaters. Conversely, a movie labeled for all ages (minimum age 0) may not instill the same level of credibility in genres such as Thriller or Action, potentially dissuading audience turnout.
+
+A parallel pattern emerges in the Sci-Fi genre, where a certificate denoting an age range of around 12 years sets the stage for the anticipation of more mature and serious thematic elements. For Horror and Thriller genres, the certificates that yield the most substantial box office returns typically fall within the 16-18 age bracket.
+
+Conversely, age categories spanning from 0 to 7 appear to align seamlessly with the Comedy genre, creating a harmonious fit within a family-friendly environment.
+
+In summation, it becomes apparent that a profound comprehension of the target audience is especially pivotal when crafting films within specific genres. This understanding serves as a fundamental key to unlocking the potential for producing a successful movie, as age certificates significantly shape audience expectations and preferences within various cinematic categories.
+
 ## Studio Analysis
 
 Earlier exploratory analysis showed that ratings have declined compared to the early days of Movies. This pattern still persists for all the Studios. We therefore turn our attention to analysing success with respect to gross. 
-```{r out.width="800px"}
-suppressWarnings({
-  movies |> distinct(studio,year,title) |>
-  group_by(year,studio) |>
-  mutate(studio = if_else(studio %in% (movies |>
-                                      distinct(studio, gross_CPI_adjusted) |>
-                                      group_by(studio) |>
-                                      summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
-                                      arrange(desc(gross_CPI_adjusted)) |>
-                                      filter(!is.na(studio)) |>
-                                      slice(1:7) |>
-                                      select(studio) |> unlist()), studio,"Other"))|>
-  filter(!is.na(studio)) |>
-  ggplot(aes(x=year, fill=factor(studio)))+
-  geom_bar(position = "fill")+
-  labs(title = "Other Studios Are Starting To Take More Market Share\nIn Terms of Movies Produced",
-       subtitle = "Despite the relatively few movies produced by Buena Vista, it maintains spot of top\nGrossing Studios",
-       y="Proportion of Movies Produced",
-       fill = "Studio")+
-  theme_minimal()
+```{r  first-studio-plot}
 
-})
+movies |> distinct(studio,year,title) |>
+group_by(year,studio) |>
+mutate(studio = if_else(studio %in% (movies |>
+                                    distinct(studio, gross_CPI_adjusted) |>
+                                    group_by(studio) |>
+                                    summarise(gross_CPI_adjusted = sum(gross_CPI_adjusted, na.rm = TRUE)) |>
+                                    arrange(desc(gross_CPI_adjusted)) |>
+                                    filter(!is.na(studio)) |>
+                                    slice(1:7) |>
+                                    select(studio) |> unlist()), studio,"Other"))|>
+filter(!is.na(studio)) |>
+ggplot(aes(x=year, fill=factor(studio)))+
+geom_bar(position = "fill")+
+labs(title = "Other Studios Are Starting To Take More Market Share\nIn Terms of Movies Produced",
+     subtitle = "Despite the relatively few movies produced by Buena Vista, it maintains spot of top\nGrossing Studios",
+     y="Proportion of Movies Produced",
+     fill = "Studio")+
+theme_minimal()
 
 ```
 
 
-```{r}
+```{r second-studio-plot}
 
 movies |> distinct(studio,year,title,.keep_all = T) |>
   group_by(year,studio) |>
