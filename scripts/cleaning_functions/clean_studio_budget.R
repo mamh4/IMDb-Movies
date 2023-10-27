@@ -168,6 +168,9 @@ if(nrow(studio_and_budget_cleaned)>=10000) {
   studio_and_budget_cleaned$budget[4496] <- NA
   #d[2967]
   #d[85]
+  
+  #when searching It's a Mad Mad Mad Mad World 1963 film on Wikipedia you get Mad men and the budget is incorrect
+  studio_and_budget_cleaned[studio_and_budget_cleaned$title=='It\'s a Mad Mad Mad Mad World','budget'] <- 9.4e6
 }
 
 studio_and_budget_cleaned$orig_studio <- orig_studio
